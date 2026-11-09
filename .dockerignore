@@ -1,0 +1,16 @@
+.git
+.gitignore
+.dockerignore
+*.xlsx
+*.xls
+Danh_sach_ca_benh.xlsx
+process_data.py
+CHAY_HE_THONG.bat
+HUONG_DAN_SU_DUNG.md
+README.md
+__pycache__
+*.pyc
+.env
+.env.*
+.DS_Store
+Thumbs.db

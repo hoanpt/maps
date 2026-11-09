@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CDC Đà Nẵng - Hệ Thống Bản Đồ Dịch Tễ Học Số (GIS)</title>
+  
+  <!-- Font & Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  
+  <!-- Leaflet MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ======================================================================
+       HEADER / TOP BAR
+       ====================================================================== -->
+  <header class="header-bar">
+    <div class="brand-section">
+      <div class="brand-logo">
+        <i class="fa-solid fa-virus-covid"></i>
+      </div>
+      <div class="brand-text">
+        <h1>
+          BẢN ĐỒ DỊCH TỄ HỌC SỐ
+          <span class="live-badge">
+            <span class="live-dot"></span> GIÁM SÁT TRỰC TUYẾN
+          </span>
+        </h1>
+        <p>Trung Tâm Kiểm Soát Bệnh Tật TP. Đà Nẵng (CDC ĐÀ NẴNG) • (Phát triển bởi Tổ CNTT)</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Nút Chế độ Giả lập -->
+      <button id="btn-toggle-sim" class="btn-header btn-simulate" title="Bật/Tắt chế độ thêm ca bệnh giả lập trên bản đồ">
+        <i class="fa-solid fa-crosshairs"></i>
+        <span>Giả Lập Ca Bệnh</span>
+      </button>
+
+      <!-- Nút Nạp Excel -->
+      <button id="btn-open-upload" class="btn-header" title="Nạp dữ liệu từ file Excel mới">
+        <i class="fa-solid fa-file-excel" style="color:#10b981;"></i>
+        <span>Nạp Excel</span>
+      </button>
+
+      <!-- Nút In / Xuất báo cáo -->
+      <button onclick="printReport()" class="btn-header" title="In ấn báo cáo dịch tễ">
+        <i class="fa-solid fa-print"></i>
+        <span>Báo Cáo</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ======================================================================
+       MAIN CONTENT WRAPPER
+       ====================================================================== -->
+  <div class="main-wrapper">
+    
+    <!-- ====================================================================
+         SIDEBAR: DASHBOARD & BỘ LỌC
+         ==================================================================== -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-content">
+        
+        <!-- KPI SUMMARY CARDS -->
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-total">
+            <div class="kpi-header">
+              <span>Tổng ca bệnh</span>
+              <i class="fa-solid fa-users-viewfinder"></i>
+            </div>
+            <div id="kpi-total" class="kpi-value">0</div>
+            <div class="kpi-sub">Giai đoạn 2025 - 2026</div>
+          </div>
+
+          <div class="kpi-card kpi-sxh">
+            <div class="kpi-header">
+              <span>Sốt xuất huyết</span>
+              <i class="fa-solid fa-mosquito"></i>
+            </div>
+            <div id="kpi-sxh" class="kpi-value">0</div>
+            <div id="kpi-sxh-sub" class="kpi-sub">0 vùng đệm 200m</div>
+          </div>
+
+          <div class="kpi-card kpi-tcm">
+            <div class="kpi-header">
+              <span>Tay chân miệng</span>
+              <i class="fa-solid fa-hand-dots"></i>
+            </div>
+            <div id="kpi-tcm" class="kpi-value">0</div>
+            <div class="kpi-sub">Theo dõi trường học</div>
+          </div>
+
+          <div class="kpi-card kpi-alert">
+            <div class="kpi-header">
+              <span>Ổ dịch giao cắt</span>
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div id="kpi-alert" class="kpi-value" style="color:#ef4444;">0</div>
+            <div class="kpi-sub">Bán kính đệm &le; 400m</div>
+          </div>
+        </div>
+
+        <!-- BỘ LỌC DỊCH TỄ HỌC -->
+        <div class="section-panel">
+          <div class="section-title">
+            <span>BỘ LỌC DỊCH BỆNH</span>
+            <i class="fa-solid fa-filter"></i>
+          </div>
+
+          <!-- Lọc nhanh theo nhóm bệnh -->
+          <div class="form-group">
+            <label class="form-label">Nhóm bệnh truyền nhiễm:</label>
+            <div class="disease-pills">
+              <span class="disease-pill active" data-val="ALL">Tất cả</span>
+              <span class="disease-pill" data-val="SXH">Sốt xuất huyết</span>
+              <span class="disease-pill" data-val="TCM">Tay chân miệng</span>
+              <span class="disease-pill" data-val="CUM">Cúm</span>
+              <span class="disease-pill" data-val="LAO">Lao</span>
+              <span class="disease-pill" data-val="SOI">Sởi</span>
+              <span class="disease-pill" data-val="SOT_RET">Sốt rét</span>
+            </div>
+          </div>
+
+          <!-- Lọc theo địa bàn Xã/Phường -->
+          <div class="form-group">
+            <label class="form-label" for="filter-ward">Địa bàn Xã/Phường:</label>
+            <select id="filter-ward" class="form-select">
+              <option value="ALL">Đang nạp địa bàn...</option>
+            </select>
+          </div>
+
+          <!-- Lọc theo phân loại xét nghiệm -->
+          <div class="form-group">
+            <label class="form-label" for="filter-diag">Phân loại chẩn đoán:</label>
+            <select id="filter-diag" class="form-select">
+              <option value="ALL">Tất cả loại chẩn đoán</option>
+              <option value="CONFIRMED">Xác định phòng xét nghiệm</option>
+              <option value="SUSPECT">Nghi ngờ (lâm sàng)</option>
+            </select>
+          </div>
+
+          <!-- Lọc theo trạng thái điều trị -->
+          <div class="form-group">
+            <label class="form-label" for="filter-status">Tình trạng bệnh nhân:</label>
+            <select id="filter-status" class="form-select">
+              <option value="ALL">Tất cả tình trạng</option>
+              <option value="INPATIENT">Điều trị nội trú</option>
+              <option value="OUTPATIENT">Điều trị ngoại trú</option>
+              <option value="DISCHARGED">Đã ra viện</option>
+              <option value="DEATH">Tử vong</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- BIỂU ĐỒ PHÂN TÍCH -->
+        <div class="section-panel">
+          <div class="section-title">
+            <span>CƠ CẤU BỆNH TẬT</span>
+            <i class="fa-solid fa-chart-pie"></i>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-disease"></canvas>
+          </div>
+        </div>
+
+        <div class="section-panel">
+          <div class="section-title">
+            <span>DIỄN TIẾN THEO THÁNG</span>
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-trend"></canvas>
+          </div>
+        </div>
+
+        <!-- FOOTER GHI NHẬN TỔ CNTT -->
+        <div style="text-align:center; padding:0.65rem 0 0.25rem 0; font-size:0.7rem; color:var(--text-dim); border-top:1px solid rgba(51,65,85,0.4);">
+          <i class="fa-solid fa-shield-halved" style="color:var(--accent-cyan); margin-right:4px;"></i>
+          <span>Bản đồ dịch tễ • <b>(Phát triển bởi Tổ CNTT)</b></span>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- Nút Ẩn / Hiện Sidebar -->
+    <button id="sidebar-toggle" class="sidebar-toggle-btn" title="Ẩn/Hiện bảng điều khiển">
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+
+    <!-- ====================================================================
+         MAP CONTAINER
+         ==================================================================== -->
+    <main class="map-container">
+      <div id="map"></div>
+
+      <!-- BANNER THÔNG BÁO CHẾ ĐỘ GIẢ LẬP -->
+      <div id="sim-banner" class="sim-alert-banner">
+        <i class="fa-solid fa-crosshairs fa-spin" style="color:var(--accent-orange);"></i>
+        <span><b>CHẾ ĐỘ GIẢ LẬP ĐANG BẬT:</b> Hãy click một điểm bất kỳ trên bản đồ để tạo ca bệnh mới và kiểm tra vùng đệm 200m!</span>
+      </div>
+
+      <!-- BẢNG ĐIỀU KHIỂN 7 LỚP BẢN ĐỒ (TOP RIGHT) -->
+      <div class="layer-card-control">
+        <div class="layer-control-title">
+          <span>HỆ THỐNG 7 LỚP BẢN ĐỒ</span>
+          <i class="fa-solid fa-layer-group" style="color:var(--accent-cyan);"></i>
+        </div>
+
+        <!-- Lựa chọn bản đồ nền (Miễn phí 100%, không cần API Key) -->
+        <div style="margin-bottom:0.6rem;">
+          <select id="select-basemap" class="form-select" style="width:100%; font-size:0.72rem; padding:0.3rem 0.5rem;">
+            <option value="google_street" selected>Bản đồ Google Maps (Chi tiết/Tiếng Việt)</option>
+            <option value="google_hybrid">Google Maps Vệ tinh + Tên đường</option>
+            <option value="dark">Bản đồ Dark Mode (CDC - Fastly)</option>
+            <option value="osm_hot">Bản đồ Giao thông (OSM HOT)</option>
+            <option value="light">Bản đồ Sáng (Positron Fastly)</option>
+            <option value="esri_sat">Bản đồ Vệ tinh Esri HD</option>
+          </select>
+        </div>
+
+        <!-- Danh sách các lớp GIS -->
+        <label class="layer-item">
+          <div>
+            <span class="layer-dot" style="background:#06b6d4;"></span>
+            <span>Layer 1: Ranh giới hành chính</span>
+          </div>
+          <input type="checkbox" id="chk-layer-districts" checked>
+        </label>
+
+        <label class="layer-item">
+          <div>
+            <span class="layer-dot" style="background:#3b82f6;"></span>
+            <span>Layer 2: Điểm ca bệnh (Cluster)</span>
+          </div>
+          <input type="checkbox" id="chk-layer-cases" checked>
+        </label>
+
+        <label class="layer-item">
+          <div>
+            <span class="layer-dot" style="background:#f97316;"></span>
+            <span>Layer 3: Vùng đệm 200m & Ổ dịch</span>
+          </div>
+          <input type="checkbox" id="chk-layer-buffer" checked>
+        </label>
+
+        <label class="layer-item">
+          <div>
+            <span class="layer-dot" style="background:#eab308;"></span>
+            <span>Layer 4: Bản đồ nhiệt (Heatmap)</span>
+          </div>
+          <input type="checkbox" id="chk-layer-heat" checked>
+        </label>
+
+        <label class="layer-item">
+          <div>
+            <span class="layer-dot" style="background:#ef4444;"></span>
+            <span>Layer 7: Cơ sở Y tế & Nguồn lực</span>
+          </div>
+          <input type="checkbox" id="chk-layer-facilities" checked>
+        </label>
+      </div>
+
+      <!-- CHÚ GIẢI BẢN ĐỒ (BOTTOM LEFT) -->
+      <div class="map-legend">
+        <div class="legend-title">Chú giải dịch tễ</div>
+        <div class="legend-row">
+          <span class="legend-color" style="background:#f97316;"></span>
+          <span>Sốt xuất huyết Dengue</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-color" style="background:#eab308;"></span>
+          <span>Tay chân miệng</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-color" style="background:#06b6d4;"></span>
+          <span>Cúm mùa</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-color" style="background:#a855f7;"></span>
+          <span>Bệnh Lao</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-color" style="background:#ef4444;"></span>
+          <span>Sởi / Bệnh cấp tính</span>
+        </div>
+        <div class="legend-row" style="margin-top:0.25rem;">
+          <span class="legend-circle"></span>
+          <span>Vùng đệm xử lý dịch 200m</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-circle" style="border-color:#ef4444; background:rgba(239,68,68,0.3);"></span>
+          <span style="color:#ef4444; font-weight:600;">Vùng giao thoa ổ dịch</span>
+        </div>
+        <div style="font-size:0.65rem; color:var(--text-dim); margin-top:0.35rem; border-top:1px solid rgba(51,65,85,0.6); padding-top:0.3rem; text-align:center;">
+          Bản đồ dịch tễ • (Phát triển bởi Tổ CNTT)
+        </div>
+      </div>
+
+      <!-- DOCK ĐIỀU KHIỂN THỜI GIAN (BOTTOM CENTER) -->
+      <div class="time-dock">
+        <div class="time-dock-header">
+          <span class="time-title">
+            <i class="fa-solid fa-clock-rotate-left"></i> TIẾN TRÌNH DỊCH TỄ THEO THỜI GIAN
+          </span>
+          <span id="time-slider-val" class="time-value">Toàn thời gian (2025 - 2026)</span>
+        </div>
+
+        <div class="time-controls">
+          <button id="btn-play-time" class="btn-play" title="Tua tự động theo thời gian">
+            <i class="fa-solid fa-play"></i>
+          </button>
+          <input type="range" id="time-slider" class="time-slider-range" min="0" max="24" value="24">
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: TẠO CA BỆNH GIẢ LẬP
+       ====================================================================== -->
+  <div id="modal-sim" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-crosshairs" style="color:var(--accent-orange);"></i> Thêm Ca Bệnh Giả Lập</h3>
+        <button id="btn-cancel-sim" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.78rem; color:var(--text-muted);">
+          Thêm ca bệnh mới tại vị trí bạn vừa click trên bản đồ. Hệ thống sẽ tự động vẽ vùng đệm 200m và quét kiểm tra ổ dịch lân cận.
+        </p>
+        
+        <div class="form-group">
+          <label class="form-label">Chẩn đoán bệnh:</label>
+          <select id="sim-disease" class="form-select">
+            <option value="SXH">Sốt xuất huyết Dengue (Sinh vùng đệm 200m)</option>
+            <option value="TCM">Tay chân miệng</option>
+            <option value="SOI">Sởi</option>
+            <option value="CUM">Cúm</option>
+            <option value="LAO">Lao</option>
+          </select>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.65rem;">
+          <div class="form-group">
+            <label class="form-label">Vĩ độ (Lat):</label>
+            <input type="text" id="sim-lat" class="form-input" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kinh độ (Lng):</label>
+            <input type="text" id="sim-lng" class="form-input" readonly>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Ngày khởi phát:</label>
+          <input type="date" id="sim-date" class="form-input" value="2026-11-09">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="document.getElementById('modal-sim').classList.remove('active')" class="btn-secondary">Hủy</button>
+        <button id="btn-confirm-sim" class="btn-primary">Tạo Ca Bệnh & Kiểm Tra</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: NẠP FILE EXCEL MỚI
+       ====================================================================== -->
+  <div id="modal-upload" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-excel" style="color:#10b981;"></i> Nạp Dữ Liệu Excel Mới</h3>
+        <button id="btn-close-upload" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="excel-dropzone" class="dropzone">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <p>Kéo và thả file <b>Danh_sach_ca_benh.xlsx</b> vào đây<br>hoặc nhấp chuột để chọn file</p>
+          <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display:none;">
+        </div>
+        <p style="font-size:0.72rem; color:var(--text-dim); text-align:center;">
+          Hỗ trợ định dạng chuẩn báo cáo Thông tư 15 & QĐ 4922 của Bộ Y tế.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       SCRIPTS: THƯ VIỆN & DỮ LIỆU
+       ====================================================================== -->
+  <!-- 1. Leaflet Core JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- 2. Leaflet MarkerCluster JS -->
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <!-- 3. Leaflet Heat JS -->
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+  <!-- 4. Turf JS (Xử lý không gian GIS & Buffer 200m) -->
+  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+
+  <!-- 5. Chart.js (Biểu đồ dịch tễ) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- 6. SheetJS (Đọc file Excel trực tiếp trên trình duyệt) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.18.5/package/dist/xlsx.full.min.js"></script>
+
+  <!-- 7. DỮ LIỆU ĐỊA BÀN & DỊCH TỄ HỌC ĐÀ NẴNG (LOAD SẴN TRÁNH LỖI CORS FILE://) -->
+  <script src="danang_districts.js"></script>
+  <script src="danang_facilities.js"></script>
+  <script src="data_epidemiology.js"></script>
+
+  <!-- 8. CORE APPLICATION LOGIC -->
+  <script src="app.js"></script>
+
+</body>
+</html>

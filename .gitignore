@@ -1,0 +1,31 @@
+# DỮ LIỆU BỆNH ÁN THÔ NHẠY CẢM (BẢO VỆ TUYỆT ĐỐI KHÔNG COMMIT LÊN GITHUB)
+Danh_sach_ca_benh.xlsx
+*.xlsx
+*.xls
+*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -3,14 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: cdc_epidemiology_map
     restart: always
-    ports:
-      - "80:80"
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-    security_opt:
-      - no-new-privileges:true
+    expose:
+      - "80"

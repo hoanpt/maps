@@ -1,10 +1,8 @@
 services:
-  cdc-map:
+  web:
     build:
       context: .
       dockerfile: Dockerfile
     restart: always
-    ports:
-      - "8080:80"
     expose:
       - "80"

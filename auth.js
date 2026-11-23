@@ -596,8 +596,13 @@ window.updateAuthUI = function() {
       scopeBanner.className = "scope-alert-card scope-guest";
       if (scopeIcon) scopeIcon.className = "fa-solid fa-lock";
       if (scopeTitle) scopeTitle.innerText = "CHẾ ĐỘ KHÁCH (CHƯA ĐĂNG NHẬP)";
-      if (scopeDesc) scopeDesc.innerText = "Thông tin chi tiết địa chỉ & đơn vị tiếp nhận bị ẩn danh. Đăng nhập để mở khóa đầy đủ.";
+      if (scopeDesc) scopeDesc.innerText = "Bản đồ chi tiết & tọa độ dịch tễ học được bảo mật. Đăng nhập để mở khóa bản đồ GIS.";
     }
+  }
+
+  // Cập nhật chế độ hiển thị View Mode (Guest Dashboard vs GIS Map) nếu app.js đã tải xong
+  if (typeof window.updateViewMode === "function") {
+    window.updateViewMode();
   }
 };
 

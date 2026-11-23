@@ -25,6 +25,10 @@ const state = {
     disease: null,
     trend: null,
     ward: null
+  },
+  guestCharts: {
+    trend: null,
+    disease: null
   }
 };
 
@@ -91,8 +95,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
-    // 4. Khởi tạo các biểu đồ Chart.js
+    // 4. Khởi tạo các biểu đồ Chart.js (Sidebar & Guest Dashboard)
     initCharts();
+    initGuestCharts();
   } catch (err) {
     console.warn("Lỗi khởi tạo biểu đồ:", err);
   }
@@ -367,9 +372,15 @@ function renderFacilitiesLayer() {
 // ============================================================================
 function updateEpidemiologyLayers() {
   // 1. Xóa các lớp hiện tại
-  layerGroups.caseMarkers.clearLayers();
-  layerGroups.bufferZone.clearLayers();
-  layerGroups.heatmap.clearLayers();
+  if (layerGroups.caseMarkers) layerGroups.caseMarkers.clearLayers();
+  if (layerGroups.bufferZone) layerGroups.bufferZone.clearLayers();
+  if (layerGroups.heatmap) layerGroups.heatmap.clearLayers();
+
+  // BẢO MẬT TUYỆT ĐỐI: CHỈ KHI ĐÃ ĐĂNG NHẬP MỚI VẼ CÁC ĐIỂM CA BỆNH TRÊN BẢN ĐỒ
+  const isAuth = window.authService && window.authService.isAuthenticated();
+  if (!isAuth) {
+    return; // Chế độ khách: Tuyệt đối không vẽ điểm, không vẽ buffer, không vẽ heatmap
+  }
 
   const cases = state.filteredCases;
   const heatPoints = [];
@@ -397,14 +408,11 @@ function updateEpidemiologyLayers() {
       fillOpacity: 0.85
     });
 
-    // Kiểm tra quyền truy cập (Admin hoặc Trạm Y tế đã đăng nhập mới thấy full địa chỉ)
-    const isAuth = window.authService && window.authService.isAuthenticated();
-
-    // Popup thông tin ca bệnh (Áp dụng cơ chế bảo vệ quyền riêng tư)
+    // Popup thông tin ca bệnh (Đã đăng nhập - hiển thị đầy đủ thông tin giám sát)
     const popupContent = `
       <div class="case-popup">
         <div class="case-popup-header">
-          <span class="case-popup-title">${isAuth ? `Ca bệnh #${c.id}` : `Ca bệnh #${c.id.toString().substring(0, 3)}***`}</span>
+          <span class="case-popup-title">Ca bệnh #${c.id}</span>
           <span class="badge-disease" style="background:${color}22; color:${color}; border:1px solid ${color}66;">
             ${DISEASE_LABELS[c.grp] || c.d_name}
           </span>
@@ -428,28 +436,16 @@ function updateEpidemiologyLayers() {
           </div>
           <div class="case-popup-row">
             <span class="case-popup-label">Địa bàn:</span>
-            ${isAuth 
-              ? `<span class="case-popup-val">${c.w}</span>` 
-              : `<span class="masked-field"><i class="fa-solid fa-lock"></i> Đã ẩn danh</span>`}
+            <span class="case-popup-val" style="font-weight:600; color:#38bdf8;">${c.w}</span>
           </div>
           <div class="case-popup-row">
             <span class="case-popup-label">Đơn vị tiếp nhận:</span>
-            ${isAuth 
-              ? `<span class="case-popup-val" style="text-align:right; max-width:140px;">${c.fac || "CDC"}</span>` 
-              : `<span class="masked-field"><i class="fa-solid fa-lock"></i> Đã ẩn danh</span>`}
+            <span class="case-popup-val" style="text-align:right; max-width:140px;">${c.fac || "CDC Đà Nẵng"}</span>
           </div>
           <div class="case-popup-row">
-            <span class="case-popup-label">Tọa độ:</span>
-            ${isAuth 
-              ? `<span class="case-popup-val">${c.lat.toFixed(4)}, ${c.lng.toFixed(4)} ${c.rc ? '🎯' : '📍'}</span>` 
-              : `<span class="masked-field"><i class="fa-solid fa-location-crosshairs"></i> Vị trí ước tính</span>`}
+            <span class="case-popup-label">Tọa độ GIS:</span>
+            <span class="case-popup-val">${c.lat.toFixed(4)}, ${c.lng.toFixed(4)} ${c.rc ? '🎯' : '📍'}</span>
           </div>
-
-          ${!isAuth ? `
-          <div class="popup-login-prompt">
-            <span><i class="fa-solid fa-shield-halved"></i> Thông tin địa chỉ & cơ sở điều trị được bảo mật.</span>
-            <button type="button" class="btn-popup-login" onclick="openLoginModal()">Đăng nhập tài khoản Y tế để xem</button>
-          </div>` : ''}
         </div>
       </div>
     `;
@@ -477,12 +473,6 @@ function updateEpidemiologyLayers() {
     });
     layerGroups.heatmap.addLayer(heat);
   }
-
-  // Cập nhật thẻ số liệu KPI
-  updateKPICards();
-
-  // Cập nhật biểu đồ
-  updateCharts();
 }
 
 // ============================================================================
@@ -780,8 +770,14 @@ function applyFilters() {
     return true;
   });
 
-  // Render lại các lớp bản đồ tương ứng
-  updateEpidemiologyLayers();
+  // 1. Cập nhật thẻ số liệu KPI
+  updateKPICards();
+
+  // 2. Cập nhật biểu đồ phân tích Sidebar
+  updateCharts();
+
+  // 3. Điều phối hiển thị View Mode (Guest Dashboard vs Bản đồ GIS)
+  updateViewMode();
 }
 
 // ============================================================================
@@ -801,12 +797,24 @@ function updateKPICards() {
     else if (c.grp === "CUM") cum++;
   });
 
-  document.getElementById("kpi-total").innerText = total.toLocaleString('vi-VN');
-  document.getElementById("kpi-sxh").innerText = sxh.toLocaleString('vi-VN');
-  document.getElementById("kpi-tcm").innerText = tcm.toLocaleString('vi-VN');
+  const isAuth = window.authService && window.authService.isAuthenticated();
+
+  const elTotal = document.getElementById("kpi-total");
+  const elSxh = document.getElementById("kpi-sxh");
+  const elTcm = document.getElementById("kpi-tcm");
+  const elSxhSub = document.getElementById("kpi-sxh-sub");
+  const elAlert = document.getElementById("kpi-alert");
+
+  if (elTotal) elTotal.innerText = total.toLocaleString('vi-VN');
+  if (elSxh) elSxh.innerText = sxh.toLocaleString('vi-VN');
+  if (elTcm) elTcm.innerText = tcm.toLocaleString('vi-VN');
   
-  // Vùng đệm 200m tương ứng số ca SXH
-  document.getElementById("kpi-sxh-sub").innerText = `${sxh.toLocaleString('vi-VN')} vùng đệm 200m`;
+  if (isAuth) {
+    if (elSxhSub) elSxhSub.innerText = `${sxh.toLocaleString('vi-VN')} vùng đệm 200m`;
+  } else {
+    if (elSxhSub) elSxhSub.innerText = `Đăng nhập xem vùng đệm`;
+    if (elAlert) elAlert.innerHTML = `<span style="font-size:0.75rem; color:#94a3b8;"><i class="fa-solid fa-lock"></i> Cần đăng nhập</span>`;
+  }
 }
 
 // ============================================================================
@@ -919,6 +927,322 @@ function updateCharts() {
     state.charts.trend.update("none");
   }
 }
+
+// ============================================================================
+// BIỂU ĐỒ & BÁO CÁO DÀNH CHO GIAO DIỆN KHÁCH (GUEST OVERVIEW DASHBOARD)
+// ============================================================================
+function initGuestCharts() {
+  const ctxGuestTrend = document.getElementById("guest-chart-trend");
+  if (ctxGuestTrend) {
+    state.guestCharts.trend = new Chart(ctxGuestTrend, {
+      type: "bar",
+      data: {
+        labels: [],
+        datasets: [{
+          label: "Số ca bệnh tại TP. Đà Nẵng",
+          data: [],
+          backgroundColor: "rgba(6, 182, 212, 0.65)",
+          borderColor: "#06b6d4",
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return ` ${context.parsed.y.toLocaleString('vi-VN')} ca bệnh`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#94a3b8", font: { size: 10 }, maxRotation: 45 },
+            grid: { display: false }
+          },
+          y: {
+            ticks: { color: "#94a3b8", font: { size: 10 } },
+            grid: { color: "rgba(51, 65, 85, 0.4)" }
+          }
+        }
+      }
+    });
+  }
+
+  const ctxGuestDisease = document.getElementById("guest-chart-disease");
+  if (ctxGuestDisease) {
+    state.guestCharts.disease = new Chart(ctxGuestDisease, {
+      type: "doughnut",
+      data: {
+        labels: ["Sốt xuất huyết", "Tay chân miệng", "Cúm mùa", "Bệnh Lao", "Sởi", "Bệnh khác"],
+        datasets: [{
+          data: [0, 0, 0, 0, 0, 0],
+          backgroundColor: [
+            DISEASE_COLORS.SXH,
+            DISEASE_COLORS.TCM,
+            DISEASE_COLORS.CUM,
+            DISEASE_COLORS.LAO,
+            DISEASE_COLORS.SOI,
+            DISEASE_COLORS.KHAC
+          ],
+          borderColor: "#0f172a",
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "right",
+            labels: { color: "#cbd5e1", boxWidth: 12, font: { size: 11 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const val = context.parsed;
+                const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                return ` ${context.label}: ${val.toLocaleString('vi-VN')} ca (${pct}%)`;
+              }
+            }
+          }
+        },
+        cutout: "60%"
+      }
+    });
+  }
+}
+
+function updateGuestDashboard() {
+  const cases = state.filteredCases || state.rawCases;
+  const total = cases.length;
+
+  let sxh = 0;
+  let tcm = 0;
+  let cum = 0;
+  let lao = 0;
+  let soi = 0;
+  let other = 0;
+
+  let stOutpatient = 0;
+  let stInpatient = 0;
+  let stDischarged = 0;
+
+  cases.forEach(c => {
+    // Phân loại nhóm bệnh
+    if (c.grp === "SXH") sxh++;
+    else if (c.grp === "TCM") tcm++;
+    else if (c.grp === "CUM") cum++;
+    else if (c.grp === "LAO") lao++;
+    else if (c.grp === "SOI") soi++;
+    else other++;
+
+    // Tình trạng điều trị
+    const st = c.st || "";
+    if (st.includes("ngoại trú")) stOutpatient++;
+    else if (st.includes("nội trú")) stInpatient++;
+    else if (st.includes("Ra viện") || st.includes("khỏi")) stDischarged++;
+    else stOutpatient++;
+  });
+
+  // Cập nhật số liệu các thẻ KPI Guest
+  const elTotal = document.getElementById("guest-kpi-total");
+  const elSxh = document.getElementById("guest-kpi-sxh");
+  const elTcm = document.getElementById("guest-kpi-tcm");
+  const elCum = document.getElementById("guest-kpi-cum");
+  const elLao = document.getElementById("guest-kpi-lao");
+  const elOut = document.getElementById("guest-st-out");
+  const elIn = document.getElementById("guest-st-in");
+  const elDis = document.getElementById("guest-st-dis");
+
+  if (elTotal) elTotal.innerText = total.toLocaleString("vi-VN");
+  if (elSxh) elSxh.innerText = sxh.toLocaleString("vi-VN");
+  if (elTcm) elTcm.innerText = tcm.toLocaleString("vi-VN");
+  if (elCum) elCum.innerText = cum.toLocaleString("vi-VN");
+  if (elLao) elLao.innerText = (lao + other).toLocaleString("vi-VN");
+  if (elOut) elOut.innerText = stOutpatient.toLocaleString("vi-VN");
+  if (elIn) elIn.innerText = stInpatient.toLocaleString("vi-VN");
+  if (elDis) elDis.innerText = stDischarged.toLocaleString("vi-VN");
+
+  // Cập nhật Biểu đồ Diễn biến theo tháng cho Guest
+  if (state.guestCharts && state.guestCharts.trend) {
+    const monthMap = {};
+    state.allMonths.forEach(m => monthMap[m] = 0);
+    cases.forEach(c => {
+      if (c.dt && c.dt.length >= 7) {
+        const m = c.dt.substring(0, 7);
+        if (monthMap[m] !== undefined) monthMap[m]++;
+      }
+    });
+    state.guestCharts.trend.data.labels = state.allMonths.map(m => m.substring(5) + "/" + m.substring(2, 4));
+    state.guestCharts.trend.data.datasets[0].data = state.allMonths.map(m => monthMap[m]);
+    state.guestCharts.trend.update("none");
+  }
+
+  // Cập nhật Biểu đồ Cơ cấu bệnh cho Guest
+  if (state.guestCharts && state.guestCharts.disease) {
+    state.guestCharts.disease.data.datasets[0].data = [sxh, tcm, cum, lao, soi, other];
+    state.guestCharts.disease.update("none");
+  }
+
+  // Cập nhật Bảng Thống kê Quận/Huyện của Đà Nẵng
+  renderGuestDistrictTable(cases, total);
+}
+
+function renderGuestDistrictTable(cases, total) {
+  const tbody = document.getElementById("guest-districts-table-body");
+  if (!tbody) return;
+
+  const districtKeywords = [
+    { name: "Quận Hải Châu", kw: ["hải châu", "hòa cường", "thạch thang", "thuận phước", "thanh bình", "bình hiên", "bình thuận", "nam dương", "phước ninh"] },
+    { name: "Quận Thanh Khê", kw: ["thanh khê", "an khê", "tam thuận", "xuân hà", "tân chính", "chính gián", "vĩnh trung", "thạc gián"] },
+    { name: "Quận Sơn Trà", kw: ["sơn trà", "an hải", "phước mỹ", "nại hiên đông", "thọ quang", "mân thái"] },
+    { name: "Quận Ngũ Hành Sơn", kw: ["ngũ hành sơn", "hòa hải", "hòa quý", "khuê mỹ", "mỹ an"] },
+    { name: "Quận Liên Chiểu", kw: ["liên chiểu", "hòa khánh", "hòa minh", "hải vân", "hòa hiệp"] },
+    { name: "Quận Cẩm Lệ", kw: ["cẩm lệ", "hòa xuân", "khuê trung", "hòa thọ", "hòa phát", "hòa an"] },
+    { name: "Huyện Hòa Vang", kw: ["hòa vang", "hòa tiến", "bà nà", "hòa châu", "hòa phước", "hòa khương", "hòa nhơn", "hòa phong", "hòa sơn", "hòa ninh", "hòa liên", "hòa bắc", "hòa phú"] },
+    { name: "Giáp ranh & Khác (Tiếp nhận tại ĐN)", kw: [] }
+  ];
+
+  const stats = districtKeywords.map(d => ({
+    name: d.name,
+    sxh: 0,
+    tcm: 0,
+    cum: 0,
+    other: 0,
+    total: 0
+  }));
+
+  cases.forEach(c => {
+    const w = (c.w || "").toLowerCase();
+    let matchedIndex = -1;
+    for (let i = 0; i < districtKeywords.length - 1; i++) {
+      if (districtKeywords[i].kw.some(k => w.includes(k))) {
+        matchedIndex = i;
+        break;
+      }
+    }
+    if (matchedIndex === -1) {
+      matchedIndex = districtKeywords.length - 1; // Khác
+    }
+
+    stats[matchedIndex].total++;
+    if (c.grp === "SXH") stats[matchedIndex].sxh++;
+    else if (c.grp === "TCM") stats[matchedIndex].tcm++;
+    else if (c.grp === "CUM") stats[matchedIndex].cum++;
+    else stats[matchedIndex].other++;
+  });
+
+  let html = "";
+  stats.forEach(st => {
+    const pct = total > 0 ? ((st.total / total) * 100).toFixed(1) : "0.0";
+    let badgeClass = "badge-safe";
+    let badgeText = "Kiểm soát tốt";
+
+    if (st.sxh > 800 || st.total > 1500) {
+      badgeClass = "badge-danger";
+      badgeText = "Nguy cơ cao";
+    } else if (st.sxh > 400 || st.total > 800) {
+      badgeClass = "badge-warning";
+      badgeText = "Theo dõi chặt";
+    }
+
+    html += `
+      <tr>
+        <td style="font-weight:600; color:#f8fafc;">
+          <i class="fa-solid fa-location-dot" style="color:var(--accent-cyan); margin-right:6px;"></i>
+          ${st.name}
+        </td>
+        <td style="text-align:right; color:#f97316; font-weight:600;">${st.sxh.toLocaleString('vi-VN')}</td>
+        <td style="text-align:right; color:#eab308; font-weight:600;">${st.tcm.toLocaleString('vi-VN')}</td>
+        <td style="text-align:right; color:#06b6d4;">${st.cum.toLocaleString('vi-VN')}</td>
+        <td style="text-align:right; color:#a855f7;">${st.other.toLocaleString('vi-VN')}</td>
+        <td style="text-align:right; font-weight:700; color:#ffffff;">${st.total.toLocaleString('vi-VN')}</td>
+        <td style="text-align:center;">
+          <div style="display:flex; align-items:center; gap:6px; justify-content:center;">
+            <div style="width:70px; height:6px; background:#1e293b; border-radius:3px; overflow:hidden;">
+              <div style="width:${Math.min(parseFloat(pct) * 3, 100)}%; height:100%; background:var(--accent-cyan);"></div>
+            </div>
+            <span style="font-size:0.72rem; color:#94a3b8; min-width:32px;">${pct}%</span>
+          </div>
+        </td>
+        <td style="text-align:center;">
+          <span class="status-badge ${badgeClass}">${badgeText}</span>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+// ============================================================================
+// ĐIỀU PHỐI CHẾ ĐỘ HIỂN THỊ: GUEST DASHBOARD VS AUTHENTICATED GIS MAP
+// ============================================================================
+function updateViewMode() {
+  const isAuth = window.authService && window.authService.isAuthenticated();
+  const user = window.authService ? window.authService.getCurrentUser() : null;
+  const guestView = document.getElementById("guest-view");
+  const mapEl = document.getElementById("map");
+  const layerControl = document.getElementById("gis-layer-control");
+  const mapLegend = document.getElementById("gis-map-legend");
+  const timeDock = document.getElementById("gis-time-dock");
+  const simBanner = document.getElementById("sim-banner");
+  const btnSim = document.getElementById("btn-toggle-sim");
+  const btnUpload = document.getElementById("btn-open-upload");
+
+  if (!isAuth) {
+    // CHẾ ĐỘ KHÁCH: KHÔNG CÓ BẢN ĐỒ, KHÔNG CHO PHÉP ZOOM
+    if (guestView) guestView.style.display = "block";
+    if (mapEl) mapEl.style.display = "none";
+    if (layerControl) layerControl.style.display = "none";
+    if (mapLegend) mapLegend.style.display = "none";
+    if (timeDock) timeDock.style.display = "none";
+    if (simBanner) simBanner.style.display = "none";
+    if (btnSim) btnSim.style.display = "none";
+    if (btnUpload) btnUpload.style.display = "none";
+
+    // XÓA TOÀN BỘ CÁC ĐIỂM / LỚP TRÊN BẢN ĐỒ ĐỂ TUYỆT ĐỐI BẢO MẬT
+    if (layerGroups.caseMarkers) layerGroups.caseMarkers.clearLayers();
+    if (layerGroups.bufferZone) layerGroups.bufferZone.clearLayers();
+    if (layerGroups.heatmap) layerGroups.heatmap.clearLayers();
+
+    // Cập nhật thông tin tổng quan ca bệnh Đà Nẵng
+    updateGuestDashboard();
+  } else {
+    // CHẾ ĐỘ ĐÃ ĐĂNG NHẬP (ADMIN HOẶC TRẠM Y TẾ): MỞ KHÓA BẢN ĐỒ GIS
+    if (guestView) guestView.style.display = "none";
+    if (mapEl) mapEl.style.display = "block";
+    if (layerControl) layerControl.style.display = "block";
+    if (mapLegend) mapLegend.style.display = "block";
+    if (timeDock) timeDock.style.display = "block";
+
+    if (user && user.role === "ADMIN") {
+      if (btnSim) btnSim.style.display = "flex";
+      if (btnUpload) btnUpload.style.display = "flex";
+    } else {
+      if (btnSim) btnSim.style.display = "none";
+      if (btnUpload) btnUpload.style.display = "none";
+    }
+
+    // Leaflet cần invalidateSize để hiển thị đúng khung hình khi từ display:none sang display:block
+    if (map) {
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+    }
+
+    // Render các lớp dịch tễ cho user đã đăng nhập
+    updateEpidemiologyLayers();
+  }
+}
+window.updateViewMode = updateViewMode;
 
 // ============================================================================
 // TIME SLIDER SIMULATION (TUA TIẾN ĐỘ THỜI GIAN)

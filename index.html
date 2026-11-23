@@ -240,19 +240,232 @@
     </button>
 
     <!-- ====================================================================
-         MAP CONTAINER
+         MAP CONTAINER & GUEST DASHBOARD
          ==================================================================== -->
     <main class="map-container">
-      <div id="map"></div>
+      <!-- BẢN ĐỒ GIS LEAFLET (CHỈ HIỂN THỊ KHI ĐÃ ĐĂNG NHẬP) -->
+      <div id="map" style="display:none;"></div>
+
+      <!-- ==================================================================
+           GIAO DIỆN KHÁCH: TỔNG QUAN TÌNH HÌNH DỊCH TỄ TP. ĐÀ NẴNG
+           (KHÔNG HIỂN THỊ BẢN ĐỒ, KHÔNG CHO PHÉP ZOOM ĐỂ BẢO VỆ VỊ TRÍ CA BỆNH)
+           ================================================================== -->
+      <div id="guest-view" class="guest-view-container">
+        <div class="guest-scroll-content">
+          
+          <!-- BANNER THÔNG BÁO BẢO MẬT BẢN ĐỒ -->
+          <div class="guest-security-banner">
+            <div class="security-banner-left">
+              <div class="security-icon-circle">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <div class="security-banner-text">
+                <div class="security-tag">
+                  <i class="fa-solid fa-lock"></i> KHU VỰC THỐNG KÊ CÔNG KHAI • BẢN ĐỒ GIS ĐƯỢC BẢO MẬT
+                </div>
+                <h2>BÁO CÁO TỔNG QUAN DỊCH BỆNH TRUYỀN NHIỄM TP. ĐÀ NẴNG</h2>
+                <p>
+                  Nhằm bảo vệ quyền riêng tư bệnh nhân và tuân thủ quy định an toàn dịch tễ học, 
+                  <b>hệ thống khóa hoàn toàn bản đồ số định vị tọa độ và vùng đệm 200m ở chế độ công khai</b>. 
+                  Người dùng chỉ được xem số liệu thống kê tổng hợp của thành phố Đà Nẵng. Cán bộ y tế vui lòng đăng nhập để mở khóa bản đồ thực địa.
+                </p>
+              </div>
+            </div>
+            <div class="security-banner-action">
+              <button class="btn-guest-login" onclick="openLoginModal()" title="Đăng nhập tài khoản y tế">
+                <i class="fa-solid fa-right-to-bracket"></i>
+                <span>ĐĂNG NHẬP HỆ THỐNG GIS</span>
+              </button>
+              <span class="btn-subtext">Dành cho Cán bộ Y tế & Quản trị CDC</span>
+            </div>
+          </div>
+
+          <!-- CÁC THẺ KPI TỔNG QUAN ĐÀ NẴNG -->
+          <div class="guest-kpi-grid">
+            <div class="guest-kpi-card card-total">
+              <div class="guest-kpi-head">
+                <span>TỔNG CA GHI NHẬN</span>
+                <i class="fa-solid fa-users-viewfinder"></i>
+              </div>
+              <div id="guest-kpi-total" class="guest-kpi-num">23.209</div>
+              <div class="guest-kpi-note">Toàn địa bàn TP. Đà Nẵng</div>
+            </div>
+
+            <div class="guest-kpi-card card-sxh">
+              <div class="guest-kpi-head">
+                <span>SỐT XUẤT HUYẾT DENGUE</span>
+                <i class="fa-solid fa-mosquito"></i>
+              </div>
+              <div id="guest-kpi-sxh" class="guest-kpi-num">11.881</div>
+              <div class="guest-kpi-note"><span class="badge-tag tag-orange">51.2%</span> Bệnh lưu hành trọng điểm</div>
+            </div>
+
+            <div class="guest-kpi-card card-tcm">
+              <div class="guest-kpi-head">
+                <span>TAY CHÂN MIỆNG</span>
+                <i class="fa-solid fa-hand-dots"></i>
+              </div>
+              <div id="guest-kpi-tcm" class="guest-kpi-num">5.364</div>
+              <div class="guest-kpi-note"><span class="badge-tag tag-yellow">23.1%</span> Giám sát trẻ em & trường học</div>
+            </div>
+
+            <div class="guest-kpi-card card-cum">
+              <div class="guest-kpi-head">
+                <span>CÚM MÙA & HÔ HẤP CẤP</span>
+                <i class="fa-solid fa-lungs-virus"></i>
+              </div>
+              <div id="guest-kpi-cum" class="guest-kpi-num">3.047</div>
+              <div class="guest-kpi-note"><span class="badge-tag tag-cyan">13.1%</span> Hội chứng cúm theo dõi</div>
+            </div>
+
+            <div class="guest-kpi-card card-lao">
+              <div class="guest-kpi-head">
+                <span>BỆNH LAO & TRUYỀN NHIỄM KHÁC</span>
+                <i class="fa-solid fa-virus"></i>
+              </div>
+              <div id="guest-kpi-lao" class="guest-kpi-num">2.917</div>
+              <div class="guest-kpi-note"><span class="badge-tag tag-purple">12.6%</span> Chương trình điều trị CDC</div>
+            </div>
+
+            <div class="guest-kpi-card card-status">
+              <div class="guest-kpi-head">
+                <span>TÌNH TRẠNG ĐIỀU TRỊ</span>
+                <i class="fa-solid fa-heart-pulse"></i>
+              </div>
+              <div class="guest-status-breakdown">
+                <div><span>Ngoại trú:</span> <b id="guest-st-out">15.867</b></div>
+                <div><span>Nội trú:</span> <b id="guest-st-in">5.293</b></div>
+                <div><span>Ra viện:</span> <b id="guest-st-dis">2.049</b></div>
+              </div>
+              <div class="guest-kpi-note" style="color:#10b981;"><i class="fa-solid fa-check-circle"></i> Tỉ lệ phục hồi tích cực</div>
+            </div>
+          </div>
+
+          <!-- BIỂU ĐỒ TRỰC QUAN CHO GIAO DIỆN KHÁCH -->
+          <div class="guest-charts-row">
+            <div class="guest-chart-box">
+              <div class="guest-chart-title">
+                <div>
+                  <i class="fa-solid fa-chart-line" style="color:var(--accent-cyan); margin-right:6px;"></i>
+                  <span>DIỄN BIẾN SỐ CA BỆNH THEO THÁNG TẠI TP. ĐÀ NẴNG</span>
+                </div>
+                <span class="chart-subtitle">Giai đoạn 2025 - 2026</span>
+              </div>
+              <div class="guest-chart-canvas">
+                <canvas id="guest-chart-trend"></canvas>
+              </div>
+            </div>
+
+            <div class="guest-chart-box">
+              <div class="guest-chart-title">
+                <div>
+                  <i class="fa-solid fa-chart-pie" style="color:var(--accent-orange); margin-right:6px;"></i>
+                  <span>CƠ CẤU CÁC NHÓM BỆNH TRUYỀN NHIỄM</span>
+                </div>
+                <span class="chart-subtitle">Tỉ lệ phần trăm (%)</span>
+              </div>
+              <div class="guest-chart-canvas">
+                <canvas id="guest-chart-disease"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- BẢNG THỐNG KÊ TỔNG HỢP CA BỆNH THEO QUẬN / HUYỆN ĐÀ NẴNG -->
+          <div class="guest-table-box">
+            <div class="guest-table-title">
+              <div>
+                <i class="fa-solid fa-map-location-dot" style="color:#38bdf8; margin-right:6px;"></i>
+                <span>BẢNG TỔNG HỢP CA BỆNH THEO QUẬN / HUYỆN TP. ĐÀ NẴNG</span>
+              </div>
+              <span class="guest-badge-secure">
+                <i class="fa-solid fa-shield-halved"></i> Thống kê tổng hợp (Không định vị tọa độ cá nhân)
+              </span>
+            </div>
+            <div class="guest-table-wrapper">
+              <table class="guest-summary-table">
+                <thead>
+                  <tr>
+                    <th>Quận / Huyện</th>
+                    <th style="text-align:right;">Sốt Xuất Huyết</th>
+                    <th style="text-align:right;">Tay Chân Miệng</th>
+                    <th style="text-align:right;">Cúm Mùa</th>
+                    <th style="text-align:right;">Bệnh Khác</th>
+                    <th style="text-align:right;">Tổng Số Ca</th>
+                    <th style="text-align:center;">Tỉ Lệ Đóng Góp</th>
+                    <th style="text-align:center;">Mức Độ Cảnh Báo</th>
+                  </tr>
+                </thead>
+                <tbody id="guest-districts-table-body">
+                  <!-- Render động bằng JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- KHUYẾN CÁO Y TẾ DỰ PHÒNG CỦA CDC ĐÀ NẴNG -->
+          <div class="guest-recommendations-row">
+            <div class="recommendation-card">
+              <div class="rec-icon" style="background:rgba(249,115,22,0.15); color:var(--accent-orange);">
+                <i class="fa-solid fa-mosquito-net"></i>
+              </div>
+              <div class="rec-content">
+                <h4>Phòng chống Sốt xuất huyết Dengue</h4>
+                <p>
+                  Dành 10-15 phút mỗi tuần để diệt bọ gậy, lăng quăng; đậy kín các dụng cụ chứa nước sinh hoạt; 
+                  thay nước bình hoa; ngủ màn cả ban ngày để ngăn muỗi vằn đốt.
+                </p>
+              </div>
+            </div>
+
+            <div class="recommendation-card">
+              <div class="rec-icon" style="background:rgba(234,179,8,0.15); color:var(--accent-yellow);">
+                <i class="fa-solid fa-hands-bubbles"></i>
+              </div>
+              <div class="rec-content">
+                <h4>Phòng chống Tay chân miệng</h4>
+                <p>
+                  Rửa tay thường xuyên bằng xà phòng dưới vòi nước chảy cho cả người chăm sóc và trẻ nhỏ; 
+                  thực hiện ăn chín uống sôi; lau sạch đồ chơi và sàn nhà hàng ngày bằng xà phòng hoặc dung dịch sát khuẩn.
+                </p>
+              </div>
+            </div>
+
+            <div class="recommendation-card">
+              <div class="rec-icon" style="background:rgba(6,182,212,0.15); color:var(--accent-cyan);">
+                <i class="fa-solid fa-phone-volume"></i>
+              </div>
+              <div class="rec-content">
+                <h4>Đường dây nóng CDC Đà Nẵng</h4>
+                <p>
+                  Khi có biểu hiện sốt cao đột ngột hoặc dấu hiệu dịch bệnh nghi ngờ, hãy thông báo ngay cho Trạm Y tế gần nhất 
+                  hoặc Hotline CDC Đà Nẵng: <b>0236.3821.469</b> / <b>1900.9095</b> để được hỗ trợ.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- CALL TO ACTION BANNER -->
+          <div class="guest-cta-banner">
+            <div class="cta-text">
+              <h3><i class="fa-solid fa-hospital-user" style="color:var(--accent-cyan); margin-right:8px;"></i> Cán bộ Y tế hoặc Chuyên viên Dịch tễ CDC?</h3>
+              <p>Đăng nhập tài khoản được cấp để mở khóa Bản đồ GIS tương tác, xem định vị tọa độ chi tiết trên địa bàn quản lý, kích hoạt bán kính đệm 200m và tổ chức xử lý ổ dịch.</p>
+            </div>
+            <button class="btn-cta-login" onclick="openLoginModal()">
+              <i class="fa-solid fa-lock-open"></i> Đăng Nhập Bản Đồ GIS
+            </button>
+          </div>
+
+        </div>
+      </div>
 
       <!-- BANNER THÔNG BÁO CHẾ ĐỘ GIẢ LẬP -->
-      <div id="sim-banner" class="sim-alert-banner">
+      <div id="sim-banner" class="sim-alert-banner" style="display:none;">
         <i class="fa-solid fa-crosshairs fa-spin" style="color:var(--accent-orange);"></i>
         <span><b>CHẾ ĐỘ GIẢ LẬP ĐANG BẬT:</b> Hãy click một điểm bất kỳ trên bản đồ để tạo ca bệnh mới và kiểm tra vùng đệm 200m!</span>
       </div>
 
       <!-- BẢNG ĐIỀU KHIỂN 7 LỚP BẢN ĐỒ (TOP RIGHT) -->
-      <div class="layer-card-control">
+      <div id="gis-layer-control" class="layer-card-control" style="display:none;">
         <div class="layer-control-title">
           <span>HỆ THỐNG 7 LỚP BẢN ĐỒ</span>
           <i class="fa-solid fa-layer-group" style="color:var(--accent-cyan);"></i>
@@ -313,7 +526,7 @@
       </div>
 
       <!-- CHÚ GIẢI BẢN ĐỒ (BOTTOM LEFT) -->
-      <div class="map-legend">
+      <div id="gis-map-legend" class="map-legend" style="display:none;">
         <div class="legend-title">Chú giải dịch tễ</div>
         <div class="legend-row">
           <span class="legend-color" style="background:#f97316;"></span>
@@ -349,7 +562,7 @@
       </div>
 
       <!-- DOCK ĐIỀU KHIỂN THỜI GIAN (BOTTOM CENTER) -->
-      <div class="time-dock">
+      <div id="gis-time-dock" class="time-dock" style="display:none;">
         <div class="time-dock-header">
           <span class="time-title">
             <i class="fa-solid fa-clock-rotate-left"></i> TIẾN TRÌNH DỊCH TỄ THEO THỜI GIAN

@@ -13,19 +13,29 @@ const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // Khóa 5 phút nếu nhập sai quá 5 lần
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;  // Phiên đăng nhập có hiệu lực 8 tiếng
 
-// Danh sách các Xã/Phường trọng điểm của Đà Nẵng để cấp tài khoản
+// Danh sách 94 Xã / Phường / Trạm Y Tế sau sắp xếp địa giới hành chính Đà Nẵng & khu vực mở rộng
 const DANANG_WARDS_LIST = [
-  "Phường Hải Châu", "Phường Hòa Cường", "Phường Thạch Thang", "Phường Thuận Phước", "Phường Thanh Bình",
-  "Phường Bình Hiên", "Phường Bình Thuận", "Phường Nam Dương", "Phường Thanh Khê", "Phường An Khê",
-  "Phường Tam Thuận", "Phường Xuân Hà", "Phường Tân Chính", "Phường Chính Gián", "Phường Vĩnh Trung",
-  "Phường Thạc Gián", "Phường Sơn Trà", "Phường An Hải", "Phường Phước Mỹ", "Phường Nại Hiên Đông",
-  "Phường Thọ Quang", "Phường Mân Thái", "Phường Ngũ Hành Sơn", "Phường Hòa Hải", "Phường Hòa Quý",
-  "Phường Khuê Mỹ", "Phường Mỹ An", "Phường Liên Chiểu", "Phường Hòa Khánh", "Phường Hòa Minh",
-  "Phường Hải Vân", "Phường Hòa Hiệp", "Phường Cẩm Lệ", "Phường Hòa Xuân", "Phường Khuê Trung",
-  "Phường Hòa Thọ Đông", "Phường Hòa Thọ Tây", "Phường Hòa Phát", "Phường Hòa An", "Xã Hòa Vang",
-  "Xã Hòa Tiến", "Xã Bà Nà", "Xã Hòa Châu", "Xã Hòa Phước", "Xã Hòa Khương", "Xã Hòa Nhơn",
-  "Xã Hòa Phong", "Xã Hòa Sơn", "Xã Hòa Ninh", "Xã Hòa Liên", "Xã Hòa Bắc", "Xã Hòa Phú"
+  "Phường Ngũ Hành Sơn", "Phường Thanh Khê", "Phường An Khê", "Phường Hòa Khánh", "Phường Sơn Trà",
+  "Phường Hòa Xuân", "Phường Cẩm Lệ", "Phường An Hải", "Phường Điện Bàn Đông", "Phường Liên Chiểu",
+  "Phường Hội An Tây", "Phường Hòa Cường", "Phường Hải Vân", "Phường Hải Châu", "Xã Thăng Bình",
+  "Phường Điện Bàn Bắc", "Xã Xuân Phú", "Phường Hội An Đông", "Xã Nam Phước", "Phường Hội An",
+  "Xã Duy Xuyên", "Xã Duy Nghĩa", "Phường Điện Bàn", "Xã Điện Bàn Tây", "Xã Thăng An",
+  "Xã Hòa Tiến", "Xã Thu Bồn", "Phường An Thắng", "Phường Bàn Thạch", "Xã Chiên Đàn",
+  "Xã Thăng Điền", "Xã Đại Lộc", "Xã Núi Thành", "Xã Tam Xuân", "Xã Tây Hồ",
+  "Xã Hòa Vang", "Phường Quảng Phú", "Xã Đồng Dương", "Phường Tam Kỳ", "Xã Thạnh Bình",
+  "Xã Bà Nà", "Xã Tam Anh", "Xã Gò Nổi", "Phường Hương Trà", "Xã Thăng Trường",
+  "Xã Tiên Phước", "Xã Quế Sơn Trung", "Xã Quế Sơn", "Xã Thăng Phú", "Xã Thạnh Mỹ",
+  "Xã Phú Ninh", "Xã Hà Nha", "Xã Bình Sơn", "Xã Lãnh Ngọc", "Xã Phú Thuận",
+  "Xã Vu Gia", "Xã Sơn Cẩm Hà", "Xã Trà My", "Xã Bến Giằng", "Xã Nông Sơn",
+  "Xã Vạn Tường", "Xã Hiệp Đức", "Xã Việt An", "Xã Tam Mỹ", "Xã Thượng Đức",
+  "Xã Quế Phước", "Xã Trà Đốc", "Xã Trà Leng", "Xã Khâm Đức", "Xã Tây Giang",
+  "Xã Nam Trà My", "Xã Trà Tập", "Xã Trà Tân", "Xã Trà Liên", "Xã Đức Phú",
+  "Đặc khu Hoàng Sa", "Xã Trà Giáp", "Xã Phước Hiệp", "Xã Sông Kôn", "Xã Trà Linh",
+  "Xã Bình Minh", "Xã Sông Vàng", "Xã Tân Hiệp", "Xã Chân Mây - Lăng Cô", "Xã Tam Hải",
+  "Xã Phước Năng", "Phường Nghĩa Lộ", "Xã Hùng Sơn", "Xã Phước Chánh", "Xã Phước Trà",
+  "Xã La Dêê", "Xã Đông Giang", "Xã Bình Chương", "Xã Nam Giang"
 ];
+window.DANANG_WARDS_LIST = DANANG_WARDS_LIST;
 
 // TIỆN ÍCH MẬT MÃ HỌC (TỰ ĐỘNG THÍCH ỨNG CẢ WEB CRYPTO LẪN FALLBACK TRÊN MỌI MÔI TRƯỜNG)
 async function generateSalt() {
@@ -150,17 +160,12 @@ class SecureAuthService {
         return users;
       }
 
-      // Đảm bảo các tài khoản mặc định cốt lõi luôn luôn tồn tại và có hash hợp lệ
+      // Đảm bảo các tài khoản mặc định cốt lõi luôn tồn tại nếu chưa có
       let modified = false;
       DEFAULT_PRESEEDED_USERS.forEach(defUser => {
         const idx = users.findIndex(u => u.username.toLowerCase() === defUser.username.toLowerCase());
         if (idx === -1) {
           users.push(defUser);
-          modified = true;
-        } else if (users[idx].passwordHash !== defUser.passwordHash) {
-          // Khôi phục hash chuẩn cho tài khoản mặc định
-          users[idx].passwordHash = defUser.passwordHash;
-          users[idx].salt = defUser.salt;
           modified = true;
         }
       });
@@ -428,6 +433,35 @@ class SecureAuthService {
     this.saveUsers(users);
     return { success: true, message: `Đã xóa tài khoản "${username}" thành công!` };
   }
+
+  async resetPassword(username, newPassword) {
+    if (!this.isAdmin()) {
+      return { success: false, message: "Chỉ Quản trị viên mới có quyền đặt lại mật khẩu!" };
+    }
+
+    const trimmedUser = (username || "").trim().toLowerCase();
+    let users = this.getUsers();
+    const idx = users.findIndex(u => u.username.toLowerCase() === trimmedUser);
+    if (idx === -1) {
+      return { success: false, message: `Không tìm thấy tài khoản "${username}"!` };
+    }
+
+    if (!newPassword || newPassword.length < 4) {
+      return { success: false, message: "Mật khẩu mới phải có ít nhất 4 ký tự!" };
+    }
+
+    const newSalt = await generateSalt();
+    const newHash = await hashPassword(newPassword, newSalt);
+
+    users[idx].salt = newSalt;
+    users[idx].passwordHash = newHash;
+    this.saveUsers(users);
+
+    return { 
+      success: true, 
+      message: `Đã đặt lại mật khẩu cho tài khoản "${username}" thành công!` 
+    };
+  }
 }
 
 // Khởi tạo instance toàn cục
@@ -596,7 +630,16 @@ window.renderUsersTable = function() {
       <td style="text-align:center;">
         ${isRootAdmin 
           ? '<span style="color:var(--text-dim); font-size:0.65rem;">Cố định</span>' 
-          : `<button type="button" class="btn-action-del" onclick="handleDeleteUser('${u.username}')" title="Xóa tài khoản"><i class="fa-solid fa-trash"></i></button>`}
+          : `
+            <div style="display:inline-flex; gap:0.35rem; align-items:center; justify-content:center;">
+              <button type="button" class="btn-action-reset" onclick="openResetPasswordModal('${u.username}')" title="Đặt lại mật khẩu cho trạm">
+                <i class="fa-solid fa-key"></i> Đổi pass
+              </button>
+              <button type="button" class="btn-action-del" onclick="handleDeleteUser('${u.username}')" title="Xóa tài khoản">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          `}
       </td>
     `;
     tbody.appendChild(tr);
@@ -651,6 +694,74 @@ window.handleDeleteUser = function(username) {
       msgBox.style.border = res.success ? "1px solid #10b981" : "1px solid #ef4444";
     }
     renderUsersTable();
+  }
+};
+
+window.openResetPasswordModal = function(username) {
+  const modal = document.getElementById("modal-reset-password");
+  const targetUserEl = document.getElementById("reset-pw-target-user");
+  const inputEl = document.getElementById("reset-pw-input");
+  const msgEl = document.getElementById("reset-pw-msg");
+  if (msgEl) msgEl.style.display = "none";
+  if (targetUserEl) targetUserEl.innerText = username;
+  if (inputEl) {
+    inputEl.value = "";
+    setTimeout(() => inputEl.focus(), 60);
+  }
+  if (modal) {
+    modal.classList.add("active");
+    modal.style.display = "flex";
+  }
+};
+
+window.closeResetPasswordModal = function() {
+  const modal = document.getElementById("modal-reset-password");
+  if (modal) {
+    modal.classList.remove("active");
+    modal.style.display = "none";
+  }
+};
+
+window.submitResetPassword = async function() {
+  const targetUserEl = document.getElementById("reset-pw-target-user");
+  const inputEl = document.getElementById("reset-pw-input");
+  const msgEl = document.getElementById("reset-pw-msg");
+
+  const username = targetUserEl ? targetUserEl.innerText : "";
+  const newPassword = inputEl ? inputEl.value : "";
+
+  if (!username) return;
+  if (!newPassword || newPassword.length < 4) {
+    if (msgEl) {
+      msgEl.style.display = "block";
+      msgEl.style.background = "rgba(239, 68, 68, 0.2)";
+      msgEl.style.color = "#fca5a5";
+      msgEl.style.border = "1px solid #ef4444";
+      msgEl.innerText = "Mật khẩu mới phải có ít nhất 4 ký tự!";
+    }
+    return;
+  }
+
+  const res = await window.authService.resetPassword(username, newPassword);
+  if (res.success) {
+    closeResetPasswordModal();
+    const userMgmtMsg = document.getElementById("user-mgmt-msg");
+    if (userMgmtMsg) {
+      userMgmtMsg.style.display = "block";
+      userMgmtMsg.style.background = "rgba(16, 185, 129, 0.2)";
+      userMgmtMsg.style.color = "#6ee7b7";
+      userMgmtMsg.style.border = "1px solid #10b981";
+      userMgmtMsg.innerText = res.message;
+    }
+    renderUsersTable();
+  } else {
+    if (msgEl) {
+      msgEl.style.display = "block";
+      msgEl.style.background = "rgba(239, 68, 68, 0.2)";
+      msgEl.style.color = "#fca5a5";
+      msgEl.style.border = "1px solid #ef4444";
+      msgEl.innerText = res.message;
+    }
   }
 };
 

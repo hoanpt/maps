@@ -181,6 +181,144 @@
       height: 310px;
       width: 100%;
     }
+
+    /* RESPONSIVE CHO THIẾT BỊ DI ĐỘNG (TABLET & SMARTPHONE) */
+    @media (max-width: 768px) {
+      .header-bar {
+        height: auto !important;
+        min-height: 52px;
+        padding: 0.45rem 0.75rem !important;
+        flex-wrap: wrap !important;
+        gap: 0.45rem !important;
+      }
+      .brand-text h1 {
+        font-size: 0.88rem !important;
+      }
+      .brand-text p {
+        display: none !important;
+      }
+      .live-badge {
+        font-size: 0.6rem !important;
+        padding: 0.1rem 0.35rem !important;
+      }
+      .header-actions {
+        gap: 0.35rem !important;
+      }
+      .btn-header {
+        padding: 0.35rem 0.55rem !important;
+        font-size: 0.75rem !important;
+      }
+      .guest-view-container {
+        padding: 0.75rem 0.65rem !important;
+      }
+      .guest-scroll-content {
+        gap: 0.95rem !important;
+      }
+      .guest-hero-banner {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 1.15rem 1rem !important;
+        gap: 1rem !important;
+      }
+      .hero-title {
+        font-size: 1.15rem !important;
+      }
+      .hero-access-card {
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      .guest-kpi-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.6rem !important;
+      }
+      .guest-kpi-grid > :nth-child(5) {
+        grid-column: span 2 !important;
+      }
+      .kpi-glass-card {
+        padding: 0.75rem !important;
+        gap: 0.65rem !important;
+      }
+      .kpi-number {
+        font-size: 1.25rem !important;
+      }
+      .charts-primary-row, .charts-secondary-row {
+        grid-template-columns: 1fr !important;
+        gap: 0.85rem !important;
+      }
+      .chart-container-trend, .chart-container-disease, .chart-container-districts {
+        height: 240px !important;
+      }
+      .chart-glass-panel {
+        padding: 0.95rem 1rem !important;
+      }
+      .guidance-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+      }
+      .cta-glass-banner {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        text-align: center !important;
+        padding: 1.15rem 1rem !important;
+        gap: 0.85rem !important;
+      }
+      .btn-cta-unlock {
+        width: 100% !important;
+        justify-content: center !important;
+      }
+      /* Mobile Map Drawer & Time Dock */
+      .sidebar {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: 310px !important;
+        max-width: 85vw !important;
+        z-index: 1001 !important;
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.6) !important;
+      }
+      .sidebar.collapsed {
+        transform: translateX(-100%) !important;
+      }
+      .sidebar-toggle-btn {
+        left: 310px !important;
+        top: 60px !important;
+        z-index: 1002 !important;
+      }
+      .sidebar.collapsed + .sidebar-toggle-btn {
+        left: 0 !important;
+      }
+      .time-dock {
+        left: 8px !important;
+        right: 8px !important;
+        bottom: 8px !important;
+        transform: none !important;
+        width: auto !important;
+        padding: 0.5rem 0.75rem !important;
+      }
+      .modal-box {
+        max-width: 95vw !important;
+        max-height: 92vh !important;
+        margin: 0.5rem !important;
+        padding: 1rem 0.85rem !important;
+        overflow-y: auto !important;
+      }
+    }
+    @media (max-width: 480px) {
+      .header-actions .btn-simulate span,
+      .header-actions button[onclick*="printReport"] span {
+        display: none !important;
+      }
+      .kpi-number {
+        font-size: 1.15rem !important;
+      }
+      .sidebar-toggle-btn {
+        left: 85vw !important;
+      }
+      .sidebar.collapsed + .sidebar-toggle-btn {
+        left: 0 !important;
+      }
+    }
   </style>
 
   <script>
@@ -962,20 +1100,35 @@
        MODAL: NẠP FILE EXCEL MỚI
        ====================================================================== -->
   <div id="modal-upload" class="modal-overlay">
-    <div class="modal-box">
+    <div class="modal-box" style="max-width:540px;">
       <div class="modal-header">
-        <h3><i class="fa-solid fa-file-excel" style="color:#10b981;"></i> Nạp Dữ Liệu Excel Mới</h3>
+        <h3><i class="fa-solid fa-file-excel" style="color:#10b981;"></i> Nạp & Cập Nhật Dữ Liệu Excel Ca Bệnh</h3>
         <button id="btn-close-upload" class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
-        <div id="excel-dropzone" class="dropzone">
+        
+        <!-- TRẠNG THÁI NGUỒN DỮ LIỆU HIỆN TẠI -->
+        <div id="upload-status-banner" style="padding:0.65rem 0.85rem; border-radius:8px; background:rgba(15,23,42,0.8); border:1px solid rgba(56,189,248,0.3); font-size:0.75rem; color:#cbd5e1; margin-bottom:0.85rem; display:flex; justify-content:space-between; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+          <div>
+            <i class="fa-solid fa-database" style="color:var(--accent-cyan); margin-right:0.35rem;"></i>
+            <span id="data-source-status">Đang tải trạng thái dữ liệu...</span>
+          </div>
+          <button id="btn-reset-default-data" type="button" class="btn-secondary" style="font-size:0.68rem; padding:0.25rem 0.55rem; border-color:#f59e0b; color:#fbbf24;" onclick="resetToDefaultData()" title="Khôi phục lại dữ liệu gốc ban đầu">
+            <i class="fa-solid fa-rotate-left"></i> Khôi phục dữ liệu gốc
+          </button>
+        </div>
+
+        <div id="excel-dropzone" class="dropzone" onclick="document.getElementById('excel-file-input').click()">
           <i class="fa-solid fa-cloud-arrow-up"></i>
           <p>Kéo và thả file <b>Danh_sach_ca_benh.xlsx</b> vào đây<br>hoặc nhấp chuột để chọn file</p>
           <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display:none;">
         </div>
-        <p style="font-size:0.72rem; color:var(--text-dim); text-align:center;">
-          Hỗ trợ định dạng chuẩn báo cáo Thông tư 15 & QĐ 4922 của Bộ Y tế.
-        </p>
+
+        <div id="excel-upload-msg" style="display:none; margin-top:0.75rem; padding:0.65rem 0.85rem; border-radius:6px; font-size:0.75rem;"></div>
+
+        <div style="font-size:0.72rem; color:var(--text-dim); margin-top:0.85rem; line-height:1.45; border-top:1px solid rgba(51,65,85,0.4); padding-top:0.65rem;">
+          <i class="fa-solid fa-circle-check" style="color:#10b981; margin-right:0.25rem;"></i> <b>Tự động đồng bộ:</b> File Excel sau khi nạp sẽ được lưu trữ và tự động cập nhật ngay lập tức lên cả <b>Dashboard công khai lúc chưa đăng nhập</b> lẫn <b>Bản đồ GIS chi tiết</b>.
+        </div>
       </div>
     </div>
   </div>
@@ -1131,6 +1284,44 @@
           </form>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: ĐẶT LẠI MẬT KHẨU CHO TRẠM Y TẾ (ADMIN ONLY)
+       ====================================================================== -->
+  <div id="modal-reset-password" class="modal-overlay" style="z-index:100000;">
+    <div class="modal-box" style="max-width:420px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-key" style="color:var(--accent-orange);"></i> Đặt Lại Mật Khẩu Trạm Y Tế</h3>
+        <button class="modal-close" onclick="closeResetPasswordModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="reset-pw-msg" style="display:none; padding:0.5rem 0.75rem; border-radius:6px; font-size:0.75rem; margin-bottom:0.75rem;"></div>
+        
+        <div style="font-size:0.8rem; color:#cbd5e1; margin-bottom:0.85rem; background:rgba(15,23,42,0.6); padding:0.6rem; border-radius:6px; border:1px solid rgba(51,65,85,0.4);">
+          Tài khoản cần đặt lại mật khẩu:<br>
+          <span style="font-size:1rem; font-weight:700; color:var(--accent-cyan);" id="reset-pw-target-user"></span>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0.75rem;">
+          <label class="form-label" for="reset-pw-input">Mật khẩu mới (*):</label>
+          <input type="password" id="reset-pw-input" class="form-input" placeholder="Tối thiểu 4 ký tự..." required>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+          <button type="button" class="btn-secondary" style="font-size:0.72rem; padding:0.35rem 0.65rem;" onclick="document.getElementById('reset-pw-input').value = 'tyt123';">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color:#f59e0b;"></i> Đặt mặc định: <b>tyt123</b>
+          </button>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
+          <button type="button" class="btn-secondary" onclick="closeResetPasswordModal()">Hủy</button>
+          <button type="button" class="btn-primary" onclick="submitResetPassword()">
+            <i class="fa-solid fa-check"></i> Lưu Mật Khẩu
+          </button>
+        </div>
       </div>
     </div>
   </div>

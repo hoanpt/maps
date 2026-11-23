@@ -32,6 +32,7 @@ const state = {
     districts: null
   }
 };
+window.state = state;
 
 // MAP & LAYERS
 let map;
@@ -115,17 +116,34 @@ document.addEventListener("DOMContentLoaded", async () => {
 // TẢI DỮ LIỆU (Tự động thích ứng cả mở file:// và http://)
 // ============================================================================
 async function loadData() {
-  // 1. Dữ liệu ca bệnh
-  if (window.EPIDEMIOLOGY_DATA && window.EPIDEMIOLOGY_DATA.cases) {
-    state.rawCases = window.EPIDEMIOLOGY_DATA.cases;
-  } else {
-    try {
-      const resp = await fetch("data_epidemiology.json");
-      const json = await resp.json();
-      state.rawCases = json.cases || [];
-    } catch (e) {
-      console.warn("Không tải được data_epidemiology.json qua fetch:", e);
-      state.rawCases = [];
+  // 1. Kiểm tra xem có file Excel tùy chỉnh do Admin tải lên không
+  try {
+    const customDataStr = localStorage.getItem("CDC_CUSTOM_EPIDEMIOLOGY_DATA");
+    if (customDataStr) {
+      const parsed = JSON.parse(customDataStr);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        state.rawCases = parsed;
+        state.isCustomExcelLoaded = true;
+        console.log(`Đã tải ${parsed.length} ca bệnh từ dữ liệu Excel do Quản trị viên cập nhật.`);
+      }
+    }
+  } catch (err) {
+    console.warn("Lỗi đọc dữ liệu Excel tùy chỉnh:", err);
+  }
+
+  // Nếu chưa có file Excel tùy chỉnh, nạp bộ dữ liệu mặc định ban đầu
+  if (!state.rawCases || state.rawCases.length === 0) {
+    if (window.EPIDEMIOLOGY_DATA && window.EPIDEMIOLOGY_DATA.cases) {
+      state.rawCases = window.EPIDEMIOLOGY_DATA.cases;
+    } else {
+      try {
+        const resp = await fetch("data_epidemiology.json");
+        const json = await resp.json();
+        state.rawCases = json.cases || [];
+      } catch (e) {
+        console.warn("Không tải được data_epidemiology.json qua fetch:", e);
+        state.rawCases = [];
+      }
     }
   }
 
@@ -163,6 +181,9 @@ async function loadData() {
   
   // Populate time slider range
   initTimeSliderRange();
+
+  // Khởi tạo trạng thái nguồn dữ liệu trong modal
+  updateUploadStatusBanner();
 
   console.log(`Đã nạp thành công ${state.rawCases.length} ca bệnh và ${state.facilities.length} cơ sở y tế.`);
 }
@@ -1134,7 +1155,8 @@ function initGuestCharts() {
 }
 
 function updateGuestDashboard() {
-  const cases = state.filteredCases || state.rawCases;
+  const isAuth = window.authService && window.authService.isAuthenticated();
+  const cases = (!isAuth) ? state.rawCases : (state.filteredCases || state.rawCases);
   const total = cases.length;
 
   let sxh = 0;
@@ -1474,16 +1496,20 @@ function togglePlayTime() {
 // GIAO DIỆN & SỰ KIỆN TƯƠNG TÁC
 // ============================================================================
 function initUIEvents() {
-  // Sidebar Toggle
+  // Sidebar Toggle (Tự động thu gọn trên mobile <= 768px để không che khuất màn hình)
   const toggleBtn = document.getElementById("sidebar-toggle");
   const sidebar = document.getElementById("sidebar");
   if (toggleBtn && sidebar) {
+    if (window.innerWidth <= 768) {
+      sidebar.classList.add("collapsed");
+      toggleBtn.innerHTML = `<i class="fa-solid fa-chevron-right"></i>`;
+    }
     toggleBtn.addEventListener("click", () => {
       sidebar.classList.toggle("collapsed");
       toggleBtn.innerHTML = sidebar.classList.contains("collapsed") 
         ? `<i class="fa-solid fa-chevron-right"></i>` 
         : `<i class="fa-solid fa-chevron-left"></i>`;
-      setTimeout(() => map.invalidateSize(), 350);
+      setTimeout(() => { if (map) map.invalidateSize(); }, 350);
     });
   }
 
@@ -1581,6 +1607,7 @@ function initUIEvents() {
         }
         return;
       }
+      updateUploadStatusBanner();
       uploadModal.classList.add("active");
     });
     document.getElementById("btn-close-upload").addEventListener("click", () => uploadModal.classList.remove("active"));
@@ -1659,29 +1686,216 @@ function initExcelUpload() {
   });
 }
 
+// ============================================================================
+// QUẢN LÝ TRẠNG THÁI NGUỒN DỮ LIỆU EXCEL TÙY CHỈNH
+// ============================================================================
+function updateUploadStatusBanner() {
+  const statusEl = document.getElementById("data-source-status");
+  const btnReset = document.getElementById("btn-reset-default-data");
+  if (!statusEl) return;
+
+  const count = (state.rawCases || []).length.toLocaleString("vi-VN");
+  if (state.isCustomExcelLoaded) {
+    statusEl.innerHTML = `<span style="color:#34d399; font-weight:600;"><i class="fa-solid fa-file-excel" style="color:#10b981; margin-right:0.35rem;"></i>Đang dùng: File Excel tùy chỉnh tải lên (${count} ca bệnh)</span>`;
+    if (btnReset) btnReset.style.display = "inline-flex";
+  } else {
+    statusEl.innerHTML = `<span style="color:#94a3b8;"><i class="fa-solid fa-database" style="color:var(--accent-cyan); margin-right:0.35rem;"></i>Đang dùng: Bộ dữ liệu gốc hệ thống (${count} ca bệnh)</span>`;
+    if (btnReset) btnReset.style.display = "none";
+  }
+}
+window.updateUploadStatusBanner = updateUploadStatusBanner;
+
 function processUploadedExcel(file) {
   if (typeof XLSX === "undefined") {
     alert("Thư viện SheetJS chưa được tải.");
     return;
   }
 
+  const msgEl = document.getElementById("excel-upload-msg");
+  if (msgEl) {
+    msgEl.style.display = "block";
+    msgEl.style.background = "rgba(14, 165, 233, 0.2)";
+    msgEl.style.border = "1px solid #0ea5e9";
+    msgEl.style.color = "#7dd3fc";
+    msgEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang đọc và đồng bộ dữ liệu từ file <b>${file.name}</b>...`;
+  }
+
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
       const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: "array" });
+      const workbook = XLSX.read(data, { type: "array", cellDates: true });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(sheet);
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-      alert(`Đã đọc thành công ${jsonData.length} bản ghi từ file Excel mới! Hệ thống đang cập nhật bản đồ...`);
-      document.getElementById("modal-upload").classList.remove("active");
+      if (!jsonData || jsonData.length === 0) {
+        throw new Error("File Excel không có dữ liệu hoặc không đọc được các hàng.");
+      }
+
+      // Chuẩn hóa danh sách ca bệnh từ các định dạng cột khác nhau
+      const newCases = jsonData.map((row, idx) => {
+        const id = row["id"] || row["ID"] || row["Mã ca"] || row["Mã"] || row["STT"] || (idx + 1);
+        const d_name = String(row["d_name"] || row["Tên bệnh"] || row["Bệnh"] || row["Chẩn đoán"] || "Sốt xuất huyết Dengue").trim();
+
+        // Tự động nhận diện nhóm bệnh
+        let grp = String(row["grp"] || row["Nhóm bệnh"] || row["Mã nhóm"] || "").trim().toUpperCase();
+        if (!grp) {
+          const dLower = d_name.toLowerCase();
+          if (dLower.includes("sốt xuất huyết") || dLower.includes("dengue")) grp = "SXH";
+          else if (dLower.includes("chân miệng") || dLower.includes("tay chân miệng") || dLower.includes("tcm")) grp = "TCM";
+          else if (dLower.includes("cúm") || dLower.includes("hội chứng cúm")) grp = "CUM";
+          else if (dLower.includes("lao")) grp = "LAO";
+          else if (dLower.includes("sởi")) grp = "SOI";
+          else if (dLower.includes("sốt rét")) grp = "SOT_RET";
+          else if (dLower.includes("viêm gan")) grp = "VIEM_GAN";
+          else if (dLower.includes("thủy đậu")) grp = "THUY_DAU";
+          else if (dLower.includes("dại")) grp = "DAI";
+          else grp = "KHAC";
+        }
+
+        const type = String(row["type"] || row["Loại chẩn đoán"] || row["Chẩn đoán"] || "Xác định phòng xét nghiệm").trim();
+        const st = String(row["st"] || row["Tình trạng"] || row["Tình trạng điều trị"] || "Điều trị ngoại trú").trim();
+
+        // Xã / Phường
+        let w = String(row["w"] || row["Xã/Phường"] || row["Xã phường"] || row["Phường/Xã"] || row["Phường"] || row["Xã"] || row["Địa bàn"] || "").trim();
+        if (!w) w = "Phường Hải Châu";
+
+        // Ngày tháng
+        let rawDate = row["dt"] || row["Ngày mắc"] || row["Ngày chẩn đoán"] || row["Ngày báo cáo"] || row["Ngày"] || "";
+        let dt = "";
+        if (rawDate instanceof Date) {
+          const yyyy = rawDate.getFullYear();
+          const mm = String(rawDate.getMonth() + 1).padStart(2, "0");
+          const dd = String(rawDate.getDate()).padStart(2, "0");
+          dt = `${yyyy}-${mm}-${dd}`;
+        } else if (typeof rawDate === "number") {
+          const d = new Date((rawDate - (25567 + 2)) * 86400 * 1000);
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
+          dt = `${yyyy}-${mm}-${dd}`;
+        } else {
+          dt = String(rawDate).trim();
+          if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dt)) {
+            const parts = dt.split("/");
+            dt = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+          }
+        }
+        if (!dt || dt.length < 7) {
+          const now = new Date();
+          dt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+        }
+
+        // Tọa độ Lat / Lng
+        let lat = parseFloat(row["lat"] || row["Vĩ độ"] || row["Latitude"] || 0);
+        let lng = parseFloat(row["lng"] || row["Kinh độ"] || row["Longitude"] || 0);
+        if (!lat || isNaN(lat) || !lng || isNaN(lng) || lat < 14 || lat > 18 || lng < 106 || lng > 110) {
+          const facilityMatch = (window.DANANG_FACILITIES || []).find(f => f.ward && f.ward.toLowerCase() === w.toLowerCase());
+          if (facilityMatch && facilityMatch.lat && facilityMatch.lng) {
+            const jitterLat = (Math.random() - 0.5) * 0.008;
+            const jitterLng = (Math.random() - 0.5) * 0.008;
+            lat = Number((facilityMatch.lat + jitterLat).toFixed(6));
+            lng = Number((facilityMatch.lng + jitterLng).toFixed(6));
+          } else {
+            const jitterLat = (Math.random() - 0.5) * 0.015;
+            const jitterLng = (Math.random() - 0.5) * 0.015;
+            lat = Number((16.0544 + jitterLat).toFixed(6));
+            lng = Number((108.2022 + jitterLng).toFixed(6));
+          }
+        }
+
+        const gen = String(row["gen"] || row["Giới tính"] || "Nam").trim();
+        const yob = String(row["yob"] || row["Năm sinh"] || row["Tuổi"] || "").trim();
+        const fac = String(row["fac"] || row["Cơ sở y tế"] || row["Bệnh viện"] || row["Nơi điều trị"] || "").trim();
+        const rc = parseInt(row["rc"] || 0);
+
+        return { id, d_name, grp, type, st, w, dt, lat, lng, gen, yob, fac, rc };
+      });
+
+      // Lưu trữ dữ liệu tùy chỉnh vào localStorage để duy trì giữa các phiên làm việc
+      try {
+        localStorage.setItem("CDC_CUSTOM_EPIDEMIOLOGY_DATA", JSON.stringify(newCases));
+        state.isCustomExcelLoaded = true;
+      } catch (storageErr) {
+        console.warn("Không thể lưu đầy đủ vào localStorage (dung lượng lớn), dữ liệu sẽ được lưu trong phiên hiện tại:", storageErr);
+        state.isCustomExcelLoaded = true;
+      }
+
+      // Cập nhật State và đồng bộ toàn bộ Dashboard công khai lẫn Bản đồ GIS
+      state.rawCases = newCases;
+      
+      const monthsSet = new Set(newCases.map(c => c.dt ? c.dt.substring(0, 7) : "").filter(m => /^\d{4}-\d{2}$/.test(m)));
+      if (monthsSet.size > 0) {
+        state.allMonths = Array.from(monthsSet).sort();
+        state.activeMonthIndex = state.allMonths.length - 1;
+        initTimeSliderRange();
+      }
+
+      populateWardDropdown();
+      applyFilters();
+      updateGuestDashboard();
+      updateUploadStatusBanner();
+
+      if (msgEl) {
+        msgEl.style.display = "block";
+        msgEl.style.background = "rgba(16, 185, 129, 0.2)";
+        msgEl.style.border = "1px solid #10b981";
+        msgEl.style.color = "#6ee7b7";
+        msgEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đã nạp thành công <b>${newCases.length.toLocaleString("vi-VN")}</b> ca bệnh từ file Excel! Hệ thống và Dashboard công khai đã tự động cập nhật.`;
+      }
     } catch (err) {
+      if (msgEl) {
+        msgEl.style.display = "block";
+        msgEl.style.background = "rgba(239, 68, 68, 0.2)";
+        msgEl.style.border = "1px solid #ef4444";
+        msgEl.style.color = "#fca5a5";
+        msgEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Lỗi khi xử lý file Excel: ${err.message}`;
+      }
       alert("Lỗi khi đọc file Excel: " + err.message);
     }
   };
   reader.readAsArrayBuffer(file);
 }
+
+// Khôi phục về bộ dữ liệu mặc định ban đầu
+window.resetToDefaultData = function() {
+  if (!confirm("Bạn có chắc chắn muốn xóa file Excel tùy chỉnh và quay lại bộ dữ liệu gốc của hệ thống?")) {
+    return;
+  }
+  try {
+    localStorage.removeItem("CDC_CUSTOM_EPIDEMIOLOGY_DATA");
+  } catch (e) {
+    console.warn("Lỗi xóa localStorage:", e);
+  }
+  state.isCustomExcelLoaded = false;
+  if (window.EPIDEMIOLOGY_DATA && window.EPIDEMIOLOGY_DATA.cases) {
+    state.rawCases = window.EPIDEMIOLOGY_DATA.cases;
+  } else {
+    state.rawCases = [];
+  }
+
+  const monthsSet = new Set(state.rawCases.map(c => c.dt ? c.dt.substring(0, 7) : "").filter(m => /^\d{4}-\d{2}$/.test(m)));
+  if (monthsSet.size > 0) {
+    state.allMonths = Array.from(monthsSet).sort();
+    state.activeMonthIndex = state.allMonths.length - 1;
+    initTimeSliderRange();
+  }
+
+  populateWardDropdown();
+  applyFilters();
+  updateGuestDashboard();
+  updateUploadStatusBanner();
+
+  const msgEl = document.getElementById("excel-upload-msg");
+  if (msgEl) {
+    msgEl.style.display = "block";
+    msgEl.style.background = "rgba(56, 189, 248, 0.2)";
+    msgEl.style.border = "1px solid #38bdf8";
+    msgEl.style.color = "#bae6fd";
+    msgEl.innerHTML = `<i class="fa-solid fa-rotate-left"></i> Đã khôi phục thành công bộ dữ liệu gốc của hệ thống (${state.rawCases.length.toLocaleString("vi-VN")} ca).`;
+  }
+};
 
 // ============================================================================
 // XUẤT BÁO CÁO (PRINT / EXPORT REPORT)
@@ -1696,13 +1910,18 @@ function printReport() {
 
 function flyToUserArea(user) {
   if (!map) return;
-  if (!user || user.role === 'ADMIN') {
+  const mapEl = document.getElementById("map");
+  if (!mapEl || mapEl.style.display === "none" || !user) {
+    return; // Không thực hiện flyTo khi bản đồ đang ẩn hoặc chưa đăng nhập
+  }
+
+  if (user.role === 'ADMIN') {
     map.flyTo([16.0544, 108.2022], 12, { duration: 1.2 });
     return;
   }
 
   // Nếu là Trạm Y tế: tìm tọa độ các ca bệnh của phường đó để tính tâm
-  const wardCases = state.rawCases.filter(c => c.w === user.ward);
+  const wardCases = state.rawCases.filter(c => c.w === user.ward && typeof c.lat === "number" && !isNaN(c.lat) && typeof c.lng === "number" && !isNaN(c.lng));
   if (wardCases.length > 0) {
     let sumLat = 0, sumLng = 0;
     const sample = wardCases.slice(0, 30);
@@ -1712,15 +1931,32 @@ function flyToUserArea(user) {
     });
     const avgLat = sumLat / sample.length;
     const avgLng = sumLng / sample.length;
-    map.flyTo([avgLat, avgLng], 14, { duration: 1.5 });
-  } else {
-    map.flyTo([16.0544, 108.2022], 13, { duration: 1.2 });
+    if (!isNaN(avgLat) && !isNaN(avgLng)) {
+      map.flyTo([avgLat, avgLng], 14, { duration: 1.5 });
+      return;
+    }
   }
+
+  // Fallback: tìm trong danh mục cơ sở y tế
+  const fac = (window.DANANG_FACILITIES || []).find(f => f.ward === user.ward && f.lat && f.lng);
+  if (fac) {
+    map.flyTo([fac.lat, fac.lng], 14, { duration: 1.5 });
+    return;
+  }
+
+  map.flyTo([16.0544, 108.2022], 13, { duration: 1.2 });
 }
 
 // Lắng nghe sự kiện đăng nhập / đăng xuất để đồng bộ dữ liệu và bản đồ
 window.addEventListener('auth:change', (e) => {
   const user = e.detail ? e.detail.user : null;
+  if (!user) {
+    state.activeDisease = "ALL";
+    state.activeDiagType = "ALL";
+    state.activeWard = "ALL";
+    state.activeStatus = "ALL";
+    state.activeMonth = "ALL";
+  }
   populateWardDropdown();
   flyToUserArea(user);
   applyFilters();

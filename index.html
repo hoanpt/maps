@@ -1227,7 +1227,12 @@
           <span id="user-count-badge" class="badge-disease badge-cum" style="font-size:0.65rem;">0 tài khoản</span>
         </div>
 
-        <div class="user-table-wrapper">
+        <!-- Ô TÌM KIẾM TÀI KHOẢN NHANH TRONG 94 TRẠM -->
+        <div style="margin-bottom:0.65rem;">
+          <input type="text" id="user-search-filter" class="form-input" placeholder="🔍 Tìm kiếm nhanh theo tên tài khoản, tên trạm, xã/phường..." oninput="renderUsersTable(this.value)" style="font-size:0.76rem; padding:0.4rem 0.65rem; background:rgba(15,23,42,0.8); border-color:rgba(56,189,248,0.3);">
+        </div>
+
+        <div class="user-table-wrapper" style="max-height:280px; overflow-y:auto;">
           <table class="user-table">
             <thead>
               <tr>
@@ -1235,7 +1240,8 @@
                 <th>Tên Trạm Y Tế / Đơn vị</th>
                 <th>Quyền</th>
                 <th>Địa bàn phân công</th>
-                <th style="text-align:center;">Xóa</th>
+                <th style="text-align:center;">Trạng thái</th>
+                <th style="text-align:center;">Thao tác</th>
               </tr>
             </thead>
             <tbody id="user-table-body">
@@ -1320,6 +1326,53 @@
           <button type="button" class="btn-secondary" onclick="closeResetPasswordModal()">Hủy</button>
           <button type="button" class="btn-primary" onclick="submitResetPassword()">
             <i class="fa-solid fa-check"></i> Lưu Mật Khẩu
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: BẮT BUỘC ĐỔI MẬT KHẨU LẦN ĐẦU (FIRST LOGIN FORCE PASSWORD CHANGE)
+       ====================================================================== -->
+  <div id="modal-force-change-password" class="modal-overlay" style="z-index:100005; background:rgba(4,9,20,0.94); backdrop-filter:blur(14px);">
+    <div class="modal-box" style="max-width:440px; border-color:#f59e0b; box-shadow: 0 0 35px rgba(245,158,11,0.25);">
+      <div class="modal-header" style="border-bottom:1px solid rgba(245,158,11,0.3); background:rgba(245,158,11,0.08);">
+        <h3 style="color:#fbbf24;"><i class="fa-solid fa-shield-virus" style="color:#f59e0b; margin-right:0.35rem;"></i> Đổi Mật Khẩu Lần Đầu (Bắt Buộc)</h3>
+      </div>
+      <div class="modal-body" style="padding:1.25rem 1.4rem;">
+        <div style="padding:0.65rem 0.85rem; border-radius:8px; background:rgba(245, 158, 11, 0.12); border:1px solid rgba(245, 158, 11, 0.35); color:#fef3c7; font-size:0.75rem; margin-bottom:0.85rem; line-height:1.45;">
+          <i class="fa-solid fa-triangle-exclamation" style="color:#fbbf24; margin-right:0.3rem;"></i>
+          <b>Yêu cầu bảo mật an toàn thông tin dịch tễ:</b><br>
+          Tài khoản Trạm Y tế của bạn đang sử dụng mật khẩu mặc định (<code>tyt123</code>). Để bảo mật hồ sơ ca bệnh trên địa bàn, bạn <b>bắt buộc phải thiết lập mật khẩu mới</b> trước khi truy cập bản đồ GIS.
+        </div>
+
+        <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(51,65,85,0.5); padding:0.55rem 0.75rem; border-radius:6px; font-size:0.75rem; color:#cbd5e1; margin-bottom:0.85rem;">
+          Tài khoản đang đăng nhập: <br>
+          <b id="force-change-pw-user" style="color:var(--accent-cyan); font-size:0.88rem;"></b>
+        </div>
+
+        <div id="force-pw-msg" style="display:none; padding:0.5rem 0.75rem; border-radius:6px; font-size:0.75rem; margin-bottom:0.75rem;"></div>
+
+        <form id="form-force-change-pw" onsubmit="event.preventDefault(); submitForceChangePassword();">
+          <div class="form-group" style="margin-bottom:0.75rem;">
+            <label class="form-label" for="force-pw-new"><i class="fa-solid fa-key" style="color:#fbbf24; margin-right:0.25rem;"></i> Mật khẩu mới (*):</label>
+            <input type="password" id="force-pw-new" class="form-input" placeholder="Tối thiểu 6 ký tự, khác tyt123..." required autocomplete="new-password">
+          </div>
+
+          <div class="form-group" style="margin-bottom:1rem;">
+            <label class="form-label" for="force-pw-confirm"><i class="fa-solid fa-check-double" style="color:#34d399; margin-right:0.25rem;"></i> Xác nhận mật khẩu mới (*):</label>
+            <input type="password" id="force-pw-confirm" class="form-input" placeholder="Nhập lại chính xác mật khẩu mới..." required autocomplete="new-password">
+          </div>
+
+          <button type="submit" class="btn-primary" style="width:100%; justify-content:center; padding:0.65rem; font-weight:700; background:linear-gradient(135deg, #f59e0b, #d97706); border-color:#f59e0b; color:#ffffff;">
+            <i class="fa-solid fa-lock-open"></i> Lưu Mật Khẩu Mới & Tiếp Tục
+          </button>
+        </form>
+
+        <div style="text-align:center; margin-top:0.75rem;">
+          <button type="button" class="btn-secondary" onclick="handleLogoutClick()" style="font-size:0.72rem; padding:0.35rem 0.75rem; border-color:rgba(239,68,68,0.4); color:#fca5a5;">
+            <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất (Đổi sau)
           </button>
         </div>
       </div>

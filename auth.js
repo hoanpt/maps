@@ -5,9 +5,9 @@
  * ============================================================================
  */
 
-const AUTH_STORAGE_KEY = "CDC_EPIDEMIOLOGY_USERS_DB_V3";
-const AUTH_SESSION_KEY = "CDC_EPIDEMIOLOGY_SESSION_V3";
-const AUTH_ATTEMPTS_KEY = "CDC_AUTH_ATTEMPTS_V3";
+const AUTH_STORAGE_KEY = "CDC_EPIDEMIOLOGY_USERS_DB_V4";
+const AUTH_SESSION_KEY = "CDC_EPIDEMIOLOGY_SESSION_V4";
+const AUTH_ATTEMPTS_KEY = "CDC_AUTH_ATTEMPTS_V4";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // Khóa 5 phút nếu nhập sai quá 5 lần
@@ -80,65 +80,64 @@ async function hashPassword(password, salt) {
   return combined;
 }
 
-// CƠ SỞ DỮ LIỆU TÀI KHOẢN MẶC ĐỊNH (MÃ HÓA SHA-256 + 16-BYTE SALT)
-// Mật khẩu mẫu:
+// HÀM TỰ ĐỘNG SINH TÊN ĐĂNG NHẬP CHUẨN HÓA CHO 94 TRẠM Y TẾ XÃ/PHƯỜNG
+function getTYTUsername(ward) {
+  let clean = (ward || "").replace(/^(Phường|Xã|Đặc khu)\s+/i, "");
+  return "tyt_" + clean.normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d").replace(/Đ/g, "d")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+window.getTYTUsername = getTYTUsername;
+
+// TỰ ĐỘNG KHỞI TẠO CƠ SỞ DỮ LIỆU 95 TÀI KHOẢN (1 ADMIN CDC + 94 TRẠM Y TẾ TOÀN THÀNH PHỐ)
+// Mật khẩu mặc định:
 //   - admin: admin123 (Quản trị viên toàn thành phố)
-//   - tyt_hoacuong: tyt123 (Trạm Y tế Phường Hòa Cường)
-//   - tyt_haichau: tyt123 (Trạm Y tế Phường Hải Châu)
-//   - tyt_thanhkhe: tyt123 (Trạm Y tế Phường Thanh Khê)
-//   - tyt_hoavang: tyt123 (Trạm Y tế Xã Hòa Vang)
-const DEFAULT_PRESEEDED_USERS = [
-  {
-    username: "admin",
-    passwordHash: "d50395e409e5c15744e7769f4f8933f17e1e38f8e031ebcb364b17cec01b6b2f",
-    salt: "21114ba7bef6c4e948babb172319676b",
-    name: "Quản Trị Viên CDC Đà Nẵng",
-    role: "ADMIN",
-    ward: "ALL",
-    district: "Toàn thành phố",
-    createdAt: "2026-11-23T08:42:40.066Z"
-  },
-  {
-    username: "tyt_hoacuong",
-    passwordHash: "139c1e1d2fa91341c5e4746d5f25de6b639819f02dca9c1f7efff4d6e0c1c654",
-    salt: "9a72cf87b7dba5959186619d5cde09e5",
-    name: "Trạm Y Tế Phường Hòa Cường",
-    role: "TYT",
-    ward: "Phường Hòa Cường",
-    district: "Quận Hải Châu",
-    createdAt: "2026-11-23T08:42:40.066Z"
-  },
-  {
-    username: "tyt_haichau",
-    passwordHash: "cd7c797f64e8b206684404ac17d93c670b12209757c2123e08aa17f676e57ef4",
-    salt: "78501aa014271db82943be61b49dc2b8",
-    name: "Trạm Y Tế Phường Hải Châu",
-    role: "TYT",
-    ward: "Phường Hải Châu",
-    district: "Quận Hải Châu",
-    createdAt: "2026-11-23T08:42:40.067Z"
-  },
-  {
-    username: "tyt_thanhkhe",
-    passwordHash: "0372879e534fa3c09b53e54cd8c47465553196c42fadf10b048c34d265459ffc",
-    salt: "84f41669e4dbd78fd77ea5cd4f35f20f",
-    name: "Trạm Y Tế Phường Thanh Khê",
-    role: "TYT",
-    ward: "Phường Thanh Khê",
-    district: "Quận Thanh Khê",
-    createdAt: "2026-11-23T08:42:40.067Z"
-  },
-  {
-    username: "tyt_hoavang",
-    passwordHash: "468dd69b6f10a287d38c374a498157a20f3e8ea4cd421cf21f00363638f6fa93",
-    salt: "e840d35c828e797b7e742e558c96c580",
-    name: "Trạm Y Tế Xã Hòa Vang",
-    role: "TYT",
-    ward: "Xã Hòa Vang",
-    district: "Huyện Hòa Vang",
-    createdAt: "2026-11-23T08:42:40.067Z"
-  }
-];
+//   - Toàn bộ 94 trạm y tế: tyt123 (Bắt buộc đổi mật khẩu mới ngay lần đăng nhập đầu tiên)
+function buildPreseededUsers() {
+  const users = [
+    {
+      username: "admin",
+      passwordHash: "d50395e409e5c15744e7769f4f8933f17e1e38f8e031ebcb364b17cec01b6b2f",
+      salt: "21114ba7bef6c4e948babb172319676b",
+      name: "Quản Trị Viên CDC Đà Nẵng",
+      role: "ADMIN",
+      ward: "ALL",
+      district: "Toàn thành phố",
+      mustChangePassword: false,
+      createdAt: "2026-11-23T08:42:40.066Z"
+    }
+  ];
+
+  const hashFn = (typeof window !== "undefined" && typeof window.sha256 === "function")
+    ? window.sha256
+    : (str) => {
+        let h = 0;
+        for (let i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i) | 0;
+        return Math.abs(h).toString(16).padStart(32, "0");
+      };
+
+  DANANG_WARDS_LIST.forEach(ward => {
+    const username = getTYTUsername(ward);
+    const salt = hashFn("SALT_CDC_" + username).substring(0, 32);
+    const passwordHash = hashFn("tyt123:" + salt);
+
+    users.push({
+      username: username,
+      passwordHash: passwordHash,
+      salt: salt,
+      name: "Trạm Y Tế " + ward,
+      role: "TYT",
+      ward: ward,
+      district: ward,
+      mustChangePassword: true, // Bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên
+      createdAt: "2026-11-23T08:42:40.066Z"
+    });
+  });
+
+  return users;
+}
 
 class SecureAuthService {
   constructor() {
@@ -152,21 +151,47 @@ class SecureAuthService {
 
   getUsers() {
     try {
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+      let stored = localStorage.getItem(AUTH_STORAGE_KEY);
       let users = stored ? JSON.parse(stored) : null;
-      if (!Array.isArray(users) || users.length === 0) {
-        users = JSON.parse(JSON.stringify(DEFAULT_PRESEEDED_USERS));
-        this.saveUsers(users);
-        return users;
+      const defaultUsers = buildPreseededUsers();
+
+      // Di chuyển dữ liệu nếu nâng cấp từ V3 lên V4
+      if (!users || !Array.isArray(users) || users.length === 0) {
+        const oldV3 = localStorage.getItem("CDC_EPIDEMIOLOGY_USERS_DB_V3");
+        if (oldV3) {
+          try {
+            const parsedOld = JSON.parse(oldV3);
+            if (Array.isArray(parsedOld)) {
+              parsedOld.forEach(oldU => {
+                const idx = defaultUsers.findIndex(u => u.username.toLowerCase() === oldU.username.toLowerCase());
+                if (idx !== -1) {
+                  defaultUsers[idx].passwordHash = oldU.passwordHash;
+                  defaultUsers[idx].salt = oldU.salt;
+                  if (oldU.mustChangePassword !== undefined) {
+                    defaultUsers[idx].mustChangePassword = oldU.mustChangePassword;
+                  }
+                }
+              });
+            }
+          } catch (e) {}
+        }
+        this.saveUsers(defaultUsers);
+        return defaultUsers;
       }
 
-      // Đảm bảo các tài khoản mặc định cốt lõi luôn tồn tại nếu chưa có
+      // Đảm bảo tất cả 94 trạm y tế và admin luôn có mặt trong CSDL
       let modified = false;
-      DEFAULT_PRESEEDED_USERS.forEach(defUser => {
+      defaultUsers.forEach(defUser => {
         const idx = users.findIndex(u => u.username.toLowerCase() === defUser.username.toLowerCase());
         if (idx === -1) {
           users.push(defUser);
           modified = true;
+        } else {
+          // Bổ sung cờ mustChangePassword nếu tài khoản trạm y tế cũ chưa có
+          if (users[idx].mustChangePassword === undefined && users[idx].role === "TYT") {
+            users[idx].mustChangePassword = true;
+            modified = true;
+          }
         }
       });
       if (modified) {
@@ -175,7 +200,7 @@ class SecureAuthService {
       return users;
     } catch (e) {
       console.warn("Lỗi đọc CSDL người dùng:", e);
-      return DEFAULT_PRESEEDED_USERS;
+      return buildPreseededUsers();
     }
   }
 
@@ -321,7 +346,8 @@ class SecureAuthService {
       name: user.name,
       role: user.role,
       ward: user.ward,
-      district: user.district || ""
+      district: user.district || "",
+      mustChangePassword: !!user.mustChangePassword
     };
 
     const sessionData = {
@@ -336,7 +362,10 @@ class SecureAuthService {
     } catch (e) {}
 
     window.dispatchEvent(new CustomEvent("auth:change", { detail: { user: sessionUser } }));
-    return { success: true, user: sessionUser };
+    if (typeof updateAuthUI === "function") {
+      updateAuthUI();
+    }
+    return { success: true, user: sessionUser, mustChangePassword: !!user.mustChangePassword };
   }
 
   logout() {
@@ -345,6 +374,9 @@ class SecureAuthService {
       localStorage.removeItem(AUTH_SESSION_KEY);
     } catch (e) {}
     window.dispatchEvent(new CustomEvent("auth:change", { detail: { user: null } }));
+    if (typeof updateAuthUI === "function") {
+      updateAuthUI();
+    }
   }
 
   isAuthenticated() {
@@ -361,6 +393,54 @@ class SecureAuthService {
 
   getCurrentUser() {
     return this.currentUser;
+  }
+
+  mustChangePassword() {
+    return !!(this.currentUser && this.currentUser.mustChangePassword);
+  }
+
+  async forceChangePassword(newPassword) {
+    if (!this.currentUser) {
+      return { success: false, message: "Bạn chưa đăng nhập vào hệ thống!" };
+    }
+    if (!newPassword || newPassword.length < 6) {
+      return { success: false, message: "Mật khẩu mới phải có ít nhất 6 ký tự!" };
+    }
+    if (newPassword === "tyt123" || newPassword === "admin123") {
+      return { success: false, message: "Mật khẩu mới không được trùng với mật khẩu mặc định (tyt123)!" };
+    }
+
+    const username = this.currentUser.username.toLowerCase();
+    let users = this.getUsers();
+    const idx = users.findIndex(u => u.username.toLowerCase() === username);
+    if (idx === -1) {
+      return { success: false, message: "Không tìm thấy thông tin tài khoản trên hệ thống!" };
+    }
+
+    const newSalt = await generateSalt();
+    const newHash = await hashPassword(newPassword, newSalt);
+
+    users[idx].salt = newSalt;
+    users[idx].passwordHash = newHash;
+    users[idx].mustChangePassword = false;
+    users[idx].passwordChangedAt = new Date().toISOString();
+    this.saveUsers(users);
+
+    // Cập nhật session hiện tại
+    this.currentUser.mustChangePassword = false;
+    try {
+      const sessionStr = localStorage.getItem(AUTH_SESSION_KEY);
+      if (sessionStr) {
+        const sessionData = JSON.parse(sessionStr);
+        if (sessionData && sessionData.user) {
+          sessionData.user.mustChangePassword = false;
+          localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(sessionData));
+        }
+      }
+    } catch (e) {}
+
+    window.dispatchEvent(new CustomEvent("auth:change", { detail: { user: this.currentUser } }));
+    return { success: true, message: "Đổi mật khẩu thành công! Tài khoản của bạn đã được kích hoạt an toàn." };
   }
 
   getUserScopeWard() {
@@ -403,7 +483,8 @@ class SecureAuthService {
       role: "TYT",
       ward: ward.trim(),
       district: district ? district.trim() : "",
-      createdAt: new Date().toISOString().substring(0, 10)
+      mustChangePassword: true,
+      createdAt: new Date().toISOString()
     };
 
     users.push(newUser);
@@ -455,11 +536,12 @@ class SecureAuthService {
 
     users[idx].salt = newSalt;
     users[idx].passwordHash = newHash;
+    users[idx].mustChangePassword = true; // Bắt buộc trạm y tế phải đổi mật khẩu khi đăng nhập
     this.saveUsers(users);
 
     return { 
       success: true, 
-      message: `Đã đặt lại mật khẩu cho tài khoản "${username}" thành công!` 
+      message: `Đã đặt lại mật khẩu cho tài khoản "${username}" thành công (Trạm sẽ được yêu cầu đổi pass khi đăng nhập)!` 
     };
   }
 }
@@ -566,6 +648,11 @@ window.handleLoginSubmit = async function() {
       if (userInput) userInput.value = "";
       if (passInput) passInput.value = "";
       updateAuthUI();
+      if (res.mustChangePassword) {
+        if (typeof openForceChangePasswordModal === "function") {
+          openForceChangePasswordModal();
+        }
+      }
     } else {
       if (errBox) {
         errBox.innerText = res.message;
@@ -606,13 +693,18 @@ window.closeUsersModal = function() {
   if (modal) modal.classList.remove("active");
 };
 
-window.renderUsersTable = function() {
+window.renderUsersTable = function(filterQuery = "") {
   const tbody = document.getElementById("user-table-body");
   const countBadge = document.getElementById("user-count-badge");
-  if (!tbody) return;
+  if (!tbody || !window.authService) return;
 
-  const users = window.authService.getUsers();
-  if (countBadge) countBadge.innerText = `${users.length} tài khoản`;
+  const allUsers = window.authService.getUsers();
+  const q = (filterQuery || "").trim().toLowerCase();
+  const users = q
+    ? allUsers.filter(u => (u.username || "").toLowerCase().includes(q) || (u.name || "").toLowerCase().includes(q) || (u.ward || "").toLowerCase().includes(q))
+    : allUsers;
+
+  if (countBadge) countBadge.innerText = `${users.length} / ${allUsers.length} tài khoản`;
 
   tbody.innerHTML = "";
   users.forEach(u => {
@@ -622,11 +714,19 @@ window.renderUsersTable = function() {
       ? '<span class="user-role-badge role-admin">ADMIN</span>' 
       : '<span class="user-role-badge role-tyt">TRẠM Y TẾ</span>';
 
+    const statusBadge = isRootAdmin
+      ? '<span style="color:#94a3b8; font-size:0.68rem;">Hệ thống</span>'
+      : (u.mustChangePassword
+          ? '<span style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.35); padding:0.15rem 0.45rem; border-radius:9999px; font-size:0.65rem; font-weight:600; white-space:nowrap;"><i class="fa-solid fa-clock-rotate-left"></i> Chưa đổi pass</span>'
+          : '<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.35); padding:0.15rem 0.45rem; border-radius:9999px; font-size:0.65rem; font-weight:600; white-space:nowrap;"><i class="fa-solid fa-check"></i> Đã kích hoạt</span>'
+        );
+
     tr.innerHTML = `
       <td><b>${u.username}</b></td>
       <td>${u.name}</td>
       <td>${roleLabel}</td>
       <td><span style="color:var(--accent-cyan); font-weight:500;">${u.ward === "ALL" ? "Toàn thành phố" : u.ward}</span></td>
+      <td style="text-align:center;">${statusBadge}</td>
       <td style="text-align:center;">
         ${isRootAdmin 
           ? '<span style="color:var(--text-dim); font-size:0.65rem;">Cố định</span>' 
@@ -765,6 +865,96 @@ window.submitResetPassword = async function() {
   }
 };
 
+// ============================================================================
+// MODAL: BẮT BUỘC ĐỔI MẬT KHẨU LẦN ĐẦU CHO TRẠM Y TẾ
+// ============================================================================
+window.openForceChangePasswordModal = function() {
+  const modal = document.getElementById("modal-force-change-password");
+  const userEl = document.getElementById("force-change-pw-user");
+  const msgEl = document.getElementById("force-pw-msg");
+  const inputEl = document.getElementById("force-pw-new");
+  const confirmEl = document.getElementById("force-pw-confirm");
+
+  if (msgEl) msgEl.style.display = "none";
+  if (userEl && window.authService && window.authService.getCurrentUser()) {
+    const u = window.authService.getCurrentUser();
+    userEl.innerText = `${u.name} (Tài khoản: ${u.username})`;
+  }
+  if (inputEl) inputEl.value = "";
+  if (confirmEl) confirmEl.value = "";
+
+  if (modal) {
+    modal.classList.add("active");
+    modal.style.display = "flex";
+  }
+  if (inputEl) setTimeout(() => inputEl.focus(), 60);
+};
+
+window.closeForceChangePasswordModal = function() {
+  const modal = document.getElementById("modal-force-change-password");
+  if (modal) {
+    modal.classList.remove("active");
+    modal.style.display = "none";
+  }
+};
+
+window.submitForceChangePassword = async function() {
+  const inputEl = document.getElementById("force-pw-new");
+  const confirmEl = document.getElementById("force-pw-confirm");
+  const msgEl = document.getElementById("force-pw-msg");
+
+  const newPassword = inputEl ? inputEl.value : "";
+  const confirmPassword = confirmEl ? confirmEl.value : "";
+
+  if (!newPassword || newPassword.length < 6) {
+    if (msgEl) {
+      msgEl.style.display = "block";
+      msgEl.style.background = "rgba(239, 68, 68, 0.2)";
+      msgEl.style.color = "#fca5a5";
+      msgEl.style.border = "1px solid #ef4444";
+      msgEl.innerText = "Mật khẩu mới phải có ít nhất 6 ký tự!";
+    }
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    if (msgEl) {
+      msgEl.style.display = "block";
+      msgEl.style.background = "rgba(239, 68, 68, 0.2)";
+      msgEl.style.color = "#fca5a5";
+      msgEl.style.border = "1px solid #ef4444";
+      msgEl.innerText = "Xác nhận mật khẩu không trùng khớp!";
+    }
+    return;
+  }
+
+  if (newPassword === "tyt123" || newPassword === "admin123") {
+    if (msgEl) {
+      msgEl.style.display = "block";
+      msgEl.style.background = "rgba(239, 68, 68, 0.2)";
+      msgEl.style.color = "#fca5a5";
+      msgEl.style.border = "1px solid #ef4444";
+      msgEl.innerText = "Mật khẩu mới không được trùng với mật khẩu mặc định (tyt123)!";
+    }
+    return;
+  }
+
+  const res = await window.authService.forceChangePassword(newPassword);
+  if (res.success) {
+    closeForceChangePasswordModal();
+    alert(res.message);
+    updateAuthUI();
+  } else {
+    if (msgEl) {
+      msgEl.style.display = "block";
+      msgEl.style.background = "rgba(239, 68, 68, 0.2)";
+      msgEl.style.color = "#fca5a5";
+      msgEl.style.border = "1px solid #ef4444";
+      msgEl.innerText = res.message;
+    }
+  }
+};
+
 window.updateAuthUI = function() {
   const user = window.authService ? window.authService.getCurrentUser() : null;
   const btnLogin = document.getElementById("btn-open-login");
@@ -785,6 +975,17 @@ window.updateAuthUI = function() {
     if (btnLogin) btnLogin.style.display = "none";
     if (profileBox) profileBox.style.display = "flex";
     if (btnLogout) btnLogout.style.display = "flex";
+
+    // Kiểm tra nếu tài khoản bắt buộc đổi mật khẩu lần đầu
+    if (user.mustChangePassword) {
+      if (typeof openForceChangePasswordModal === "function") {
+        openForceChangePasswordModal();
+      }
+    } else {
+      if (typeof closeForceChangePasswordModal === "function") {
+        closeForceChangePasswordModal();
+      }
+    }
 
     // Khi đã xác thực: Mở khóa bản đồ GIS, ẩn Dashboard khách
     if (guestView) guestView.style.display = "none";

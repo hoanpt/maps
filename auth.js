@@ -5,9 +5,9 @@
  * ============================================================================
  */
 
-const AUTH_STORAGE_KEY = "CDC_EPIDEMIOLOGY_USERS_DB";
-const AUTH_SESSION_KEY = "CDC_EPIDEMIOLOGY_SESSION";
-const AUTH_ATTEMPTS_KEY = "CDC_AUTH_ATTEMPTS";
+const AUTH_STORAGE_KEY = "CDC_EPIDEMIOLOGY_USERS_DB_V3";
+const AUTH_SESSION_KEY = "CDC_EPIDEMIOLOGY_SESSION_V3";
+const AUTH_ATTEMPTS_KEY = "CDC_AUTH_ATTEMPTS_V3";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // Khóa 5 phút nếu nhập sai quá 5 lần
@@ -27,19 +27,47 @@ const DANANG_WARDS_LIST = [
   "Xã Hòa Phong", "Xã Hòa Sơn", "Xã Hòa Ninh", "Xã Hòa Liên", "Xã Hòa Bắc", "Xã Hòa Phú"
 ];
 
-// TIỆN ÍCH MẬT MÃ HỌC (WEB CRYPTO API)
+// TIỆN ÍCH MẬT MÃ HỌC (TỰ ĐỘNG THÍCH ỨNG CẢ WEB CRYPTO LẪN FALLBACK TRÊN MỌI MÔI TRƯỜNG)
 async function generateSalt() {
-  const array = new Uint8Array(16);
-  crypto.getRandomValues(array);
-  return Array.from(array).map(b => b.toString(16).padStart(2, "0")).join("");
+  if (typeof window !== "undefined" && window.crypto && typeof window.crypto.getRandomValues === "function") {
+    try {
+      const array = new Uint8Array(16);
+      window.crypto.getRandomValues(array);
+      return Array.from(array).map(b => b.toString(16).padStart(2, "0")).join("");
+    } catch (e) {}
+  }
+  let s = "";
+  for (let i = 0; i < 32; i++) {
+    s += Math.floor(Math.random() * 16).toString(16);
+  }
+  return s;
 }
 
 async function hashPassword(password, salt) {
-  const enc = new TextEncoder();
-  const data = enc.encode(password + ":" + salt);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  const combined = (password || "") + ":" + (salt || "");
+  
+  // 1. Thử Web Crypto API nếu môi trường hỗ trợ (HTTPS hoặc localhost)
+  if (typeof window !== "undefined" && window.crypto && window.crypto.subtle) {
+    try {
+      const enc = new TextEncoder();
+      const data = enc.encode(combined);
+      const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    } catch (e) {
+      console.warn("Web Crypto không khả dụng, chuyển sang thư viện SHA-256:", e);
+    }
+  }
+
+  // 2. Dự phòng bằng thư viện SHA-256 thuần (hoạt động 100% trên HTTP, IP, mọi trình duyệt)
+  if (typeof window !== "undefined" && typeof window.sha256 === "function") {
+    return window.sha256(combined);
+  }
+  if (typeof sha256 === "function") {
+    return sha256(combined);
+  }
+
+  return combined;
 }
 
 // CƠ SỞ DỮ LIỆU TÀI KHOẢN MẶC ĐỊNH (MÃ HÓA SHA-256 + 16-BYTE SALT)
@@ -115,14 +143,31 @@ class SecureAuthService {
   getUsers() {
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (stored) {
-        const users = JSON.parse(stored);
-        if (Array.isArray(users) && users.length > 0 && users.some(u => u.username === "admin")) {
-          return users;
-        }
+      let users = stored ? JSON.parse(stored) : null;
+      if (!Array.isArray(users) || users.length === 0) {
+        users = JSON.parse(JSON.stringify(DEFAULT_PRESEEDED_USERS));
+        this.saveUsers(users);
+        return users;
       }
-      this.saveUsers(DEFAULT_PRESEEDED_USERS);
-      return DEFAULT_PRESEEDED_USERS;
+
+      // Đảm bảo các tài khoản mặc định cốt lõi luôn luôn tồn tại và có hash hợp lệ
+      let modified = false;
+      DEFAULT_PRESEEDED_USERS.forEach(defUser => {
+        const idx = users.findIndex(u => u.username.toLowerCase() === defUser.username.toLowerCase());
+        if (idx === -1) {
+          users.push(defUser);
+          modified = true;
+        } else if (users[idx].passwordHash !== defUser.passwordHash) {
+          // Khôi phục hash chuẩn cho tài khoản mặc định
+          users[idx].passwordHash = defUser.passwordHash;
+          users[idx].salt = defUser.salt;
+          modified = true;
+        }
+      });
+      if (modified) {
+        this.saveUsers(users);
+      }
+      return users;
     } catch (e) {
       console.warn("Lỗi đọc CSDL người dùng:", e);
       return DEFAULT_PRESEEDED_USERS;
@@ -480,15 +525,23 @@ window.handleLoginSubmit = async function() {
     return;
   }
 
-  const res = await window.authService.login(username, password);
-  if (res.success) {
-    closeLoginModal();
-    if (userInput) userInput.value = "";
-    if (passInput) passInput.value = "";
-    updateAuthUI();
-  } else {
+  try {
+    const res = await window.authService.login(username, password);
+    if (res.success) {
+      closeLoginModal();
+      if (userInput) userInput.value = "";
+      if (passInput) passInput.value = "";
+      updateAuthUI();
+    } else {
+      if (errBox) {
+        errBox.innerText = res.message;
+        errBox.style.display = "block";
+      }
+    }
+  } catch (err) {
+    console.error("Lỗi đăng nhập:", err);
     if (errBox) {
-      errBox.innerText = res.message;
+      errBox.innerText = "Lỗi xử lý xác thực: " + (err.message || "Vui lòng thử lại!");
       errBox.style.display = "block";
     }
   }

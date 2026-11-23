@@ -16,10 +16,13 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
   
   <!-- Custom Styles (với cache buster) -->
-  <link rel="stylesheet" href="styles.css?v=3.2.0">
+  <link rel="stylesheet" href="styles.css?v=3.3.0">
+  
+  <!-- Fallback SHA-256 (hoạt động trên cả HTTP, HTTPS, di động, không phụ thuộc crypto.subtle) -->
+  <script src="sha256.min.js"></script>
   
   <!-- Auth & Security Core -->
-  <script src="auth.js?v=3.2.0"></script>
+  <script src="auth.js?v=3.3.0"></script>
 
   <!-- Inline Critical Styles & Modal Opener (Bảo đảm hiển thị đẹp mắt và mở modal 100% không phụ thuộc cache) -->
   <style>

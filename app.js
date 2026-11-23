@@ -460,19 +460,26 @@ function updateEpidemiologyLayers() {
 
   // LAYER 4: HEATMAP DENSITY LAYER
   if (heatPoints.length > 0 && typeof L.heatLayer === "function") {
-    const heat = L.heatLayer(heatPoints, {
-      radius: 20,
-      blur: 15,
-      maxZoom: 15,
-      gradient: {
-        0.2: '#06b6d4',
-        0.4: '#10b981',
-        0.6: '#eab308',
-        0.8: '#f97316',
-        1.0: '#ef4444'
+    try {
+      const mapContainer = map ? map.getContainer() : null;
+      if (mapContainer && mapContainer.offsetWidth > 0 && mapContainer.offsetHeight > 0) {
+        const heat = L.heatLayer(heatPoints, {
+          radius: 20,
+          blur: 15,
+          maxZoom: 15,
+          gradient: {
+            0.2: '#06b6d4',
+            0.4: '#10b981',
+            0.6: '#eab308',
+            0.8: '#f97316',
+            1.0: '#ef4444'
+          }
+        });
+        layerGroups.heatmap.addLayer(heat);
       }
-    });
-    layerGroups.heatmap.addLayer(heat);
+    } catch (err) {
+      console.warn("Lỗi an toàn khi nạp Heatmap layer:", err);
+    }
   }
 }
 
@@ -1387,12 +1394,20 @@ function updateViewMode() {
     // Leaflet cần invalidateSize để hiển thị đúng khung hình khi từ display:none sang display:block
     if (map) {
       setTimeout(() => {
-        map.invalidateSize();
-      }, 100);
+        try {
+          map.invalidateSize();
+          updateEpidemiologyLayers();
+        } catch (err) {
+          console.warn("Lỗi cập nhật lớp dịch tễ sau đăng nhập:", err);
+        }
+      }, 150);
+    } else {
+      try {
+        updateEpidemiologyLayers();
+      } catch (err) {
+        console.warn("Lỗi cập nhật lớp dịch tễ:", err);
+      }
     }
-
-    // Render các lớp dịch tễ cho user đã đăng nhập
-    updateEpidemiologyLayers();
   }
 }
 window.updateViewMode = updateViewMode;

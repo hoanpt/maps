@@ -424,15 +424,6 @@ window.closeLoginModal = function() {
   }
 };
 
-// Đăng nhập nhanh 1-click cho người dùng thử nghiệm / cán bộ
-window.quickFillLogin = async function(user, pass) {
-  const userInput = document.getElementById("login-username");
-  const passInput = document.getElementById("login-password");
-  if (userInput) userInput.value = user;
-  if (passInput) passInput.value = pass;
-  await window.handleLoginSubmit();
-};
-
 window.handleFirstRunSetup = async function() {
   const userEl = document.getElementById("setup-username");
   const nameEl = document.getElementById("setup-fullname");
@@ -616,6 +607,10 @@ window.updateAuthUI = function() {
   const profileBox = document.getElementById("user-profile-box");
   const btnManage = document.getElementById("btn-open-manage-users");
   const btnLogout = document.getElementById("btn-logout");
+  const btnSim = document.getElementById("btn-toggle-sim");
+  const btnUpload = document.getElementById("btn-open-upload");
+  const guestView = document.getElementById("guest-view");
+  const mapEl = document.getElementById("map");
 
   const scopeBanner = document.getElementById("scope-banner");
   const scopeIcon = document.getElementById("scope-icon");
@@ -626,6 +621,10 @@ window.updateAuthUI = function() {
     if (btnLogin) btnLogin.style.display = "none";
     if (profileBox) profileBox.style.display = "flex";
     if (btnLogout) btnLogout.style.display = "flex";
+
+    // Khi đã xác thực: Mở khóa bản đồ GIS, ẩn Dashboard khách
+    if (guestView) guestView.style.display = "none";
+    if (mapEl) mapEl.style.display = "block";
 
     const nameEl = document.getElementById("user-display-name");
     if (nameEl) nameEl.innerText = user.name;
@@ -643,6 +642,8 @@ window.updateAuthUI = function() {
         avatarBadge.innerHTML = `<i class="fa-solid fa-user-shield"></i>`;
       }
       if (btnManage) btnManage.style.display = "flex";
+      if (btnSim) btnSim.style.display = "flex";
+      if (btnUpload) btnUpload.style.display = "flex";
 
       if (scopeBanner) {
         scopeBanner.className = "scope-alert-card scope-admin";
@@ -660,6 +661,8 @@ window.updateAuthUI = function() {
         avatarBadge.innerHTML = `<i class="fa-solid fa-house-medical"></i>`;
       }
       if (btnManage) btnManage.style.display = "none";
+      if (btnSim) btnSim.style.display = "none";
+      if (btnUpload) btnUpload.style.display = "none";
 
       if (scopeBanner) {
         scopeBanner.className = "scope-alert-card scope-tyt";
@@ -669,10 +672,17 @@ window.updateAuthUI = function() {
       }
     }
   } else {
+    // KHÁCH CHƯA ĐĂNG NHẬP
     if (btnLogin) btnLogin.style.display = "flex";
     if (profileBox) profileBox.style.display = "none";
     if (btnManage) btnManage.style.display = "none";
     if (btnLogout) btnLogout.style.display = "none";
+    if (btnSim) btnSim.style.display = "none";
+    if (btnUpload) btnUpload.style.display = "none";
+
+    // Hiện Dashboard tổng quan ca bệnh Đà Nẵng, bảo mật bản đồ chi tiết
+    if (guestView) guestView.style.display = "block";
+    if (mapEl) mapEl.style.display = "none";
 
     if (scopeBanner) {
       scopeBanner.className = "scope-alert-card scope-guest";

@@ -42,6 +42,66 @@ async function hashPassword(password, salt) {
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
+// CƠ SỞ DỮ LIỆU TÀI KHOẢN MẶC ĐỊNH (MÃ HÓA SHA-256 + 16-BYTE SALT)
+// Mật khẩu mẫu:
+//   - admin: admin123 (Quản trị viên toàn thành phố)
+//   - tyt_hoacuong: tyt123 (Trạm Y tế Phường Hòa Cường)
+//   - tyt_haichau: tyt123 (Trạm Y tế Phường Hải Châu)
+//   - tyt_thanhkhe: tyt123 (Trạm Y tế Phường Thanh Khê)
+//   - tyt_hoavang: tyt123 (Trạm Y tế Xã Hòa Vang)
+const DEFAULT_PRESEEDED_USERS = [
+  {
+    username: "admin",
+    passwordHash: "d50395e409e5c15744e7769f4f8933f17e1e38f8e031ebcb364b17cec01b6b2f",
+    salt: "21114ba7bef6c4e948babb172319676b",
+    name: "Quản Trị Viên CDC Đà Nẵng",
+    role: "ADMIN",
+    ward: "ALL",
+    district: "Toàn thành phố",
+    createdAt: "2026-11-23T08:42:40.066Z"
+  },
+  {
+    username: "tyt_hoacuong",
+    passwordHash: "139c1e1d2fa91341c5e4746d5f25de6b639819f02dca9c1f7efff4d6e0c1c654",
+    salt: "9a72cf87b7dba5959186619d5cde09e5",
+    name: "Trạm Y Tế Phường Hòa Cường",
+    role: "TYT",
+    ward: "Phường Hòa Cường",
+    district: "Quận Hải Châu",
+    createdAt: "2026-11-23T08:42:40.066Z"
+  },
+  {
+    username: "tyt_haichau",
+    passwordHash: "cd7c797f64e8b206684404ac17d93c670b12209757c2123e08aa17f676e57ef4",
+    salt: "78501aa014271db82943be61b49dc2b8",
+    name: "Trạm Y Tế Phường Hải Châu",
+    role: "TYT",
+    ward: "Phường Hải Châu",
+    district: "Quận Hải Châu",
+    createdAt: "2026-11-23T08:42:40.067Z"
+  },
+  {
+    username: "tyt_thanhkhe",
+    passwordHash: "0372879e534fa3c09b53e54cd8c47465553196c42fadf10b048c34d265459ffc",
+    salt: "84f41669e4dbd78fd77ea5cd4f35f20f",
+    name: "Trạm Y Tế Phường Thanh Khê",
+    role: "TYT",
+    ward: "Phường Thanh Khê",
+    district: "Quận Thanh Khê",
+    createdAt: "2026-11-23T08:42:40.067Z"
+  },
+  {
+    username: "tyt_hoavang",
+    passwordHash: "468dd69b6f10a287d38c374a498157a20f3e8ea4cd421cf21f00363638f6fa93",
+    salt: "e840d35c828e797b7e742e558c96c580",
+    name: "Trạm Y Tế Xã Hòa Vang",
+    role: "TYT",
+    ward: "Xã Hòa Vang",
+    district: "Huyện Hòa Vang",
+    createdAt: "2026-11-23T08:42:40.067Z"
+  }
+];
+
 class SecureAuthService {
   constructor() {
     this.currentUser = this.loadValidSession();
@@ -55,10 +115,17 @@ class SecureAuthService {
   getUsers() {
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
+      if (stored) {
+        const users = JSON.parse(stored);
+        if (Array.isArray(users) && users.length > 0 && users.some(u => u.username === "admin")) {
+          return users;
+        }
+      }
+      this.saveUsers(DEFAULT_PRESEEDED_USERS);
+      return DEFAULT_PRESEEDED_USERS;
     } catch (e) {
       console.warn("Lỗi đọc CSDL người dùng:", e);
-      return [];
+      return DEFAULT_PRESEEDED_USERS;
     }
   }
 
@@ -335,27 +402,35 @@ window.openLoginModal = function() {
   const boxFirstRun = document.getElementById("box-first-run-setup");
   const modalTitle = document.getElementById("login-modal-title");
 
-  const isFirst = window.authService ? window.authService.isFirstRun() : false;
-  if (isFirst) {
-    if (boxNormal) boxNormal.style.display = "none";
-    if (boxFirstRun) boxFirstRun.style.display = "block";
-    if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-key" style="color:var(--accent-cyan);"></i> Khởi Tạo Quản Trị Viên (Lần đầu)`;
-    const setupUser = document.getElementById("setup-username");
-    if (setupUser) setupUser.focus();
-  } else {
-    if (boxNormal) boxNormal.style.display = "block";
-    if (boxFirstRun) boxFirstRun.style.display = "none";
-    if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-shield-halved" style="color:var(--accent-cyan);"></i> Đăng Nhập Hệ Thống Dịch Tễ`;
-    const userInput = document.getElementById("login-username");
-    if (userInput) userInput.focus();
+  // Mặc định luôn mở form đăng nhập bình thường
+  if (boxNormal) boxNormal.style.display = "block";
+  if (boxFirstRun) boxFirstRun.style.display = "none";
+  if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-shield-halved" style="color:var(--accent-cyan);"></i> Đăng Nhập Hệ Thống Dịch Tễ`;
+
+  if (modal) {
+    modal.classList.add("active");
+    modal.style.display = "flex";
   }
 
-  if (modal) modal.classList.add("active");
+  const userInput = document.getElementById("login-username");
+  if (userInput) userInput.focus();
 };
 
 window.closeLoginModal = function() {
   const modal = document.getElementById("modal-login");
-  if (modal) modal.classList.remove("active");
+  if (modal) {
+    modal.classList.remove("active");
+    modal.style.display = "none";
+  }
+};
+
+// Đăng nhập nhanh 1-click cho người dùng thử nghiệm / cán bộ
+window.quickFillLogin = async function(user, pass) {
+  const userInput = document.getElementById("login-username");
+  const passInput = document.getElementById("login-password");
+  if (userInput) userInput.value = user;
+  if (passInput) passInput.value = pass;
+  await window.handleLoginSubmit();
 };
 
 window.handleFirstRunSetup = async function() {
@@ -388,7 +463,6 @@ window.handleFirstRunSetup = async function() {
 
   const res = await window.authService.setupInitialAdmin(username, password, name);
   if (res.success) {
-    alert("Khởi tạo tài khoản Quản trị viên thành công! Bạn đã được đăng nhập tự động.");
     closeLoginModal();
     updateAuthUI();
   } else {
@@ -404,8 +478,16 @@ window.handleLoginSubmit = async function() {
   const passInput = document.getElementById("login-password");
   const errBox = document.getElementById("login-error-msg");
 
-  const username = userInput ? userInput.value : "";
+  const username = userInput ? userInput.value.trim() : "";
   const password = passInput ? passInput.value : "";
+
+  if (!username || !password) {
+    if (errBox) {
+      errBox.innerText = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!";
+      errBox.style.display = "block";
+    }
+    return;
+  }
 
   const res = await window.authService.login(username, password);
   if (res.success) {

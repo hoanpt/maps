@@ -28,7 +28,8 @@ const state = {
   },
   guestCharts: {
     trend: null,
-    disease: null
+    disease: null,
+    districts: null
   }
 };
 
@@ -932,48 +933,84 @@ function updateCharts() {
 // BIỂU ĐỒ & BÁO CÁO DÀNH CHO GIAO DIỆN KHÁCH (GUEST OVERVIEW DASHBOARD)
 // ============================================================================
 function initGuestCharts() {
+  // Chart 1: Diễn tiến theo tháng (Combo Bar + Line Chart)
   const ctxGuestTrend = document.getElementById("guest-chart-trend");
   if (ctxGuestTrend) {
     state.guestCharts.trend = new Chart(ctxGuestTrend, {
       type: "bar",
       data: {
         labels: [],
-        datasets: [{
-          label: "Số ca bệnh tại TP. Đà Nẵng",
-          data: [],
-          backgroundColor: "rgba(6, 182, 212, 0.65)",
-          borderColor: "#06b6d4",
-          borderWidth: 1,
-          borderRadius: 4
-        }]
+        datasets: [
+          {
+            type: "bar",
+            label: "Sốt xuất huyết Dengue",
+            data: [],
+            backgroundColor: "rgba(249, 115, 22, 0.8)",
+            borderColor: "#f97316",
+            borderWidth: 1,
+            borderRadius: 4,
+            order: 2
+          },
+          {
+            type: "bar",
+            label: "Bệnh truyền nhiễm khác",
+            data: [],
+            backgroundColor: "rgba(6, 182, 212, 0.65)",
+            borderColor: "#06b6d4",
+            borderWidth: 1,
+            borderRadius: 4,
+            order: 3
+          },
+          {
+            type: "line",
+            label: "Tổng số ca mắc",
+            data: [],
+            borderColor: "#facc15",
+            backgroundColor: "rgba(250, 204, 21, 0.15)",
+            borderWidth: 2.5,
+            pointRadius: 3,
+            pointHoverRadius: 6,
+            pointBackgroundColor: "#facc15",
+            tension: 0.3,
+            fill: false,
+            order: 1
+          }
+        ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
+          legend: {
+            display: false // Đã có custom legend pills ở trên
+          },
           tooltip: {
+            mode: "index",
+            intersect: false,
             callbacks: {
               label: function(context) {
-                return ` ${context.parsed.y.toLocaleString('vi-VN')} ca bệnh`;
+                return ` ${context.dataset.label}: ${context.parsed.y.toLocaleString('vi-VN')} ca`;
               }
             }
           }
         },
         scales: {
           x: {
+            stacked: true,
             ticks: { color: "#94a3b8", font: { size: 10 }, maxRotation: 45 },
             grid: { display: false }
           },
           y: {
+            stacked: false,
             ticks: { color: "#94a3b8", font: { size: 10 } },
-            grid: { color: "rgba(51, 65, 85, 0.4)" }
+            grid: { color: "rgba(51, 65, 85, 0.35)" }
           }
         }
       }
     });
   }
 
+  // Chart 2: Cơ cấu bệnh tật (Doughnut Chart)
   const ctxGuestDisease = document.getElementById("guest-chart-disease");
   if (ctxGuestDisease) {
     state.guestCharts.disease = new Chart(ctxGuestDisease, {
@@ -983,12 +1020,12 @@ function initGuestCharts() {
         datasets: [{
           data: [0, 0, 0, 0, 0, 0],
           backgroundColor: [
-            DISEASE_COLORS.SXH,
-            DISEASE_COLORS.TCM,
-            DISEASE_COLORS.CUM,
-            DISEASE_COLORS.LAO,
-            DISEASE_COLORS.SOI,
-            DISEASE_COLORS.KHAC
+            "#f97316", // SXH: Cam
+            "#facc15", // TCM: Vàng chanh
+            "#06b6d4", // Cúm: Cyan
+            "#a855f7", // Lao: Tím
+            "#ef4444", // Sởi: Đỏ
+            "#64748b"  // Khác: Xám
           ],
           borderColor: "#0f172a",
           borderWidth: 2
@@ -997,10 +1034,11 @@ function initGuestCharts() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         plugins: {
           legend: {
-            position: "right",
-            labels: { color: "#cbd5e1", boxWidth: 12, font: { size: 11 } }
+            position: "bottom",
+            labels: { color: "#cbd5e1", boxWidth: 12, padding: 8, font: { size: 11 } }
           },
           tooltip: {
             callbacks: {
@@ -1013,7 +1051,76 @@ function initGuestCharts() {
             }
           }
         },
-        cutout: "60%"
+        cutout: "62%"
+      }
+    });
+  }
+
+  // Chart 3: So sánh ca bệnh 7 Quận/Huyện (Horizontal Stacked Bar Chart)
+  const ctxGuestDistricts = document.getElementById("guest-chart-districts");
+  if (ctxGuestDistricts) {
+    state.guestCharts.districts = new Chart(ctxGuestDistricts, {
+      type: "bar",
+      data: {
+        labels: ["Liên Chiểu", "Thanh Khê", "Cẩm Lệ", "Sơn Trà", "Ngũ Hành Sơn", "Hải Châu", "Hòa Vang"],
+        datasets: [
+          {
+            label: "Sốt xuất huyết Dengue",
+            data: [],
+            backgroundColor: "rgba(249, 115, 22, 0.85)",
+            borderRadius: 3
+          },
+          {
+            label: "Tay chân miệng",
+            data: [],
+            backgroundColor: "rgba(250, 204, 21, 0.85)",
+            borderRadius: 3
+          },
+          {
+            label: "Cúm mùa",
+            data: [],
+            backgroundColor: "rgba(6, 182, 212, 0.85)",
+            borderRadius: 3
+          },
+          {
+            label: "Bệnh khác",
+            data: [],
+            backgroundColor: "rgba(168, 85, 247, 0.85)",
+            borderRadius: 3
+          }
+        ]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "top",
+            labels: { color: "#cbd5e1", boxWidth: 12, font: { size: 11 } }
+          },
+          tooltip: {
+            mode: "index",
+            intersect: false,
+            callbacks: {
+              label: function(context) {
+                return ` ${context.dataset.label}: ${context.parsed.x.toLocaleString('vi-VN')} ca`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            ticks: { color: "#94a3b8", font: { size: 10 } },
+            grid: { color: "rgba(51, 65, 85, 0.35)" }
+          },
+          y: {
+            stacked: true,
+            ticks: { color: "#f8fafc", font: { size: 11, weight: "600" } },
+            grid: { display: false }
+          }
+        }
       }
     });
   }
@@ -1056,7 +1163,6 @@ function updateGuestDashboard() {
   const elSxh = document.getElementById("guest-kpi-sxh");
   const elTcm = document.getElementById("guest-kpi-tcm");
   const elCum = document.getElementById("guest-kpi-cum");
-  const elLao = document.getElementById("guest-kpi-lao");
   const elOut = document.getElementById("guest-st-out");
   const elIn = document.getElementById("guest-st-in");
   const elDis = document.getElementById("guest-st-dis");
@@ -1065,33 +1171,80 @@ function updateGuestDashboard() {
   if (elSxh) elSxh.innerText = sxh.toLocaleString("vi-VN");
   if (elTcm) elTcm.innerText = tcm.toLocaleString("vi-VN");
   if (elCum) elCum.innerText = cum.toLocaleString("vi-VN");
-  if (elLao) elLao.innerText = (lao + other).toLocaleString("vi-VN");
   if (elOut) elOut.innerText = stOutpatient.toLocaleString("vi-VN");
   if (elIn) elIn.innerText = stInpatient.toLocaleString("vi-VN");
   if (elDis) elDis.innerText = stDischarged.toLocaleString("vi-VN");
 
-  // Cập nhật Biểu đồ Diễn biến theo tháng cho Guest
+  // 1. Cập nhật Biểu đồ Diễn biến theo tháng (Combo Bar + Line)
   if (state.guestCharts && state.guestCharts.trend) {
-    const monthMap = {};
-    state.allMonths.forEach(m => monthMap[m] = 0);
+    const sxhMap = {};
+    const otherMap = {};
+    const totalMap = {};
+    state.allMonths.forEach(m => {
+      sxhMap[m] = 0;
+      otherMap[m] = 0;
+      totalMap[m] = 0;
+    });
+
     cases.forEach(c => {
       if (c.dt && c.dt.length >= 7) {
         const m = c.dt.substring(0, 7);
-        if (monthMap[m] !== undefined) monthMap[m]++;
+        if (totalMap[m] !== undefined) {
+          totalMap[m]++;
+          if (c.grp === "SXH") sxhMap[m]++;
+          else otherMap[m]++;
+        }
       }
     });
+
     state.guestCharts.trend.data.labels = state.allMonths.map(m => m.substring(5) + "/" + m.substring(2, 4));
-    state.guestCharts.trend.data.datasets[0].data = state.allMonths.map(m => monthMap[m]);
+    state.guestCharts.trend.data.datasets[0].data = state.allMonths.map(m => sxhMap[m]);
+    state.guestCharts.trend.data.datasets[1].data = state.allMonths.map(m => otherMap[m]);
+    state.guestCharts.trend.data.datasets[2].data = state.allMonths.map(m => totalMap[m]);
     state.guestCharts.trend.update("none");
   }
 
-  // Cập nhật Biểu đồ Cơ cấu bệnh cho Guest
+  // 2. Cập nhật Biểu đồ Cơ cấu bệnh (Doughnut)
   if (state.guestCharts && state.guestCharts.disease) {
     state.guestCharts.disease.data.datasets[0].data = [sxh, tcm, cum, lao, soi, other];
-    state.guestCharts.disease.update("none");
+    state.guestCharts.disease.update();
   }
 
-  // Cập nhật Bảng Thống kê Quận/Huyện của Đà Nẵng
+  // 3. Cập nhật Biểu đồ So sánh 7 Quận/Huyện (Horizontal Stacked Bar)
+  const dKeywords = [
+    { name: "Liên Chiểu", kw: ["liên chiểu", "hòa khánh", "hòa minh", "hải vân", "hòa hiệp"] },
+    { name: "Thanh Khê", kw: ["thanh khê", "an khê", "tam thuận", "xuân hà", "tân chính", "chính gián", "vĩnh trung", "thạc gián"] },
+    { name: "Cẩm Lệ", kw: ["cẩm lệ", "hòa xuân", "khuê trung", "hòa thọ", "hòa phát", "hòa an"] },
+    { name: "Sơn Trà", kw: ["sơn trà", "an hải", "phước mỹ", "nại hiên đông", "thọ quang", "mân thái"] },
+    { name: "Ngũ Hành Sơn", kw: ["ngũ hành sơn", "hòa hải", "hòa quý", "khuê mỹ", "mỹ an"] },
+    { name: "Hải Châu", kw: ["hải châu", "hòa cường", "thạch thang", "thuận phước", "thanh bình", "bình hiên", "bình thuận", "nam dương", "phước ninh"] },
+    { name: "Hòa Vang", kw: ["hòa vang", "hòa tiến", "bà nà", "hòa châu", "hòa phước", "hòa khương", "hòa nhơn", "hòa phong", "hòa sơn", "hòa ninh", "hòa liên", "hòa bắc", "hòa phú"] }
+  ];
+
+  const dStats = dKeywords.map(d => ({ name: d.name, sxh: 0, tcm: 0, cum: 0, other: 0 }));
+
+  cases.forEach(c => {
+    const w = (c.w || "").toLowerCase();
+    for (let i = 0; i < dKeywords.length; i++) {
+      if (dKeywords[i].kw.some(k => w.includes(k))) {
+        if (c.grp === "SXH") dStats[i].sxh++;
+        else if (c.grp === "TCM") dStats[i].tcm++;
+        else if (c.grp === "CUM") dStats[i].cum++;
+        else dStats[i].other++;
+        break;
+      }
+    }
+  });
+
+  if (state.guestCharts && state.guestCharts.districts) {
+    state.guestCharts.districts.data.datasets[0].data = dStats.map(d => d.sxh);
+    state.guestCharts.districts.data.datasets[1].data = dStats.map(d => d.tcm);
+    state.guestCharts.districts.data.datasets[2].data = dStats.map(d => d.cum);
+    state.guestCharts.districts.data.datasets[3].data = dStats.map(d => d.other);
+    state.guestCharts.districts.update("none");
+  }
+
+  // 4. Cập nhật Bảng Thống kê Quận/Huyện của Đà Nẵng
   renderGuestDistrictTable(cases, total);
 }
 

@@ -17,6 +17,9 @@
   
   <!-- Custom Styles -->
   <link rel="stylesheet" href="styles.css">
+  
+  <!-- Auth & Security Core (Load early so openLoginModal is instantly available) -->
+  <script src="auth.js"></script>
 </head>
 <body>
 
@@ -247,212 +250,348 @@
       <div id="map" style="display:none;"></div>
 
       <!-- ==================================================================
-           GIAO DIỆN KHÁCH: TỔNG QUAN TÌNH HÌNH DỊCH TỄ TP. ĐÀ NẴNG
-           (KHÔNG HIỂN THỊ BẢN ĐỒ, KHÔNG CHO PHÉP ZOOM ĐỂ BẢO VỆ VỊ TRÍ CA BỆNH)
+           GIAO DIỆN KHÁCH: DASHBOARD TÌNH HÌNH DỊCH BỆNH TP. ĐÀ NẴNG
+           (TRỰC QUAN HÓA DỮ LIỆU ĐA CHIỀU, BẮT MẮT, BẢO MẬT VỊ TRÍ CA BỆNH)
            ================================================================== -->
       <div id="guest-view" class="guest-view-container">
         <div class="guest-scroll-content">
           
-          <!-- BANNER THÔNG BÁO BẢO MẬT BẢN ĐỒ -->
-          <div class="guest-security-banner">
-            <div class="security-banner-left">
-              <div class="security-icon-circle">
-                <i class="fa-solid fa-shield-halved"></i>
+          <!-- HERO HEADER: TRUNG TÂM GIÁM SÁT DỊCH BỆNH TP. ĐÀ NẴNG -->
+          <div class="guest-hero-banner">
+            <div class="hero-glow-blob"></div>
+            <div class="hero-left">
+              <div class="hero-badge">
+                <span class="live-dot"></span> BÁO CÁO DỊCH TỄ HỌC TP. ĐÀ NẴNG (GIAI ĐOẠN 2025 - 2026)
               </div>
-              <div class="security-banner-text">
-                <div class="security-tag">
-                  <i class="fa-solid fa-lock"></i> KHU VỰC THỐNG KÊ CÔNG KHAI • BẢN ĐỒ GIS ĐƯỢC BẢO MẬT
-                </div>
-                <h2>BÁO CÁO TỔNG QUAN DỊCH BỆNH TRUYỀN NHIỄM TP. ĐÀ NẴNG</h2>
-                <p>
-                  Nhằm bảo vệ quyền riêng tư bệnh nhân và tuân thủ quy định an toàn dịch tễ học, 
-                  <b>hệ thống khóa hoàn toàn bản đồ số định vị tọa độ và vùng đệm 200m ở chế độ công khai</b>. 
-                  Người dùng chỉ được xem số liệu thống kê tổng hợp của thành phố Đà Nẵng. Cán bộ y tế vui lòng đăng nhập để mở khóa bản đồ thực địa.
-                </p>
+              <h2 class="hero-title">
+                TRUNG TÂM GIÁM SÁT & DỰ BÁO DỊCH BỆNH TRUYỀN NHIỄM
+              </h2>
+              <p class="hero-desc">
+                Hệ thống phân tích dịch tễ học và giám sát ổ dịch thời gian thực của <b>CDC Đà Nẵng</b>. 
+                Số liệu ca bệnh được tổng hợp tự động từ các cơ sở y tế trên toàn địa bàn 7 quận/huyện.
+              </p>
+              <div class="hero-security-pill">
+                <i class="fa-solid fa-shield-halved" style="color:var(--accent-cyan);"></i>
+                <span>Chế độ thống kê công khai • Bản đồ GIS chi tiết & điều tra thực địa yêu cầu đăng nhập</span>
               </div>
             </div>
-            <div class="security-banner-action">
-              <button class="btn-guest-login" onclick="openLoginModal()" title="Đăng nhập tài khoản y tế">
-                <i class="fa-solid fa-right-to-bracket"></i>
-                <span>ĐĂNG NHẬP HỆ THỐNG GIS</span>
-              </button>
-              <span class="btn-subtext">Dành cho Cán bộ Y tế & Quản trị CDC</span>
+
+            <div class="hero-right">
+              <div class="hero-access-card">
+                <div class="access-card-head">
+                  <i class="fa-solid fa-user-lock" style="color:var(--accent-orange);"></i>
+                  <span>DÀNH CHO CÁN BỘ Y TẾ</span>
+                </div>
+                <div class="access-card-text">
+                  Đăng nhập để xem bản đồ GIS chi tiết, vùng đệm 200m và tổ chức điều tra ổ dịch thực địa.
+                </div>
+                <button class="btn-hero-login" onclick="openLoginModal()" title="Mở hộp thoại đăng nhập">
+                  <i class="fa-solid fa-right-to-bracket"></i>
+                  <span>ĐĂNG NHẬP HỆ THỐNG GIS</span>
+                </button>
+                <div class="access-card-hint">
+                  <i class="fa-solid fa-key" style="color:var(--accent-cyan);"></i> Tài khoản mẫu: <code>admin</code> / <code>admin123</code>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- CÁC THẺ KPI TỔNG QUAN ĐÀ NẴNG -->
+          <!-- 5 THẺ CHỈ SỐ KPI NEON GLASSMORPHISM -->
           <div class="guest-kpi-grid">
-            <div class="guest-kpi-card card-total">
-              <div class="guest-kpi-head">
-                <span>TỔNG CA GHI NHẬN</span>
-                <i class="fa-solid fa-users-viewfinder"></i>
+            <div class="kpi-glass-card kpi-glow-cyan">
+              <div class="kpi-icon-box cyan-glow">
+                <i class="fa-solid fa-viruses"></i>
               </div>
-              <div id="guest-kpi-total" class="guest-kpi-num">23.209</div>
-              <div class="guest-kpi-note">Toàn địa bàn TP. Đà Nẵng</div>
+              <div class="kpi-meta">
+                <span class="kpi-title">TỔNG CA DỊCH BỆNH</span>
+                <span id="guest-kpi-total" class="kpi-number">23.209</span>
+                <span class="kpi-trend trend-cyan">
+                  <i class="fa-solid fa-map-pin"></i> 7 Quận/Huyện Đà Nẵng
+                </span>
+              </div>
             </div>
 
-            <div class="guest-kpi-card card-sxh">
-              <div class="guest-kpi-head">
-                <span>SỐT XUẤT HUYẾT DENGUE</span>
+            <div class="kpi-glass-card kpi-glow-orange">
+              <div class="kpi-icon-box orange-glow">
                 <i class="fa-solid fa-mosquito"></i>
               </div>
-              <div id="guest-kpi-sxh" class="guest-kpi-num">11.881</div>
-              <div class="guest-kpi-note"><span class="badge-tag tag-orange">51.2%</span> Bệnh lưu hành trọng điểm</div>
+              <div class="kpi-meta">
+                <span class="kpi-title">SỐT XUẤT HUYẾT DENGUE</span>
+                <span id="guest-kpi-sxh" class="kpi-number" style="color:#fb923c;">11.881</span>
+                <span class="kpi-trend trend-orange">
+                  <i class="fa-solid fa-triangle-exclamation"></i> 51.2% - Bệnh trọng điểm
+                </span>
+              </div>
             </div>
 
-            <div class="guest-kpi-card card-tcm">
-              <div class="guest-kpi-head">
-                <span>TAY CHÂN MIỆNG</span>
+            <div class="kpi-glass-card kpi-glow-yellow">
+              <div class="kpi-icon-box yellow-glow">
                 <i class="fa-solid fa-hand-dots"></i>
               </div>
-              <div id="guest-kpi-tcm" class="guest-kpi-num">5.364</div>
-              <div class="guest-kpi-note"><span class="badge-tag tag-yellow">23.1%</span> Giám sát trẻ em & trường học</div>
+              <div class="kpi-meta">
+                <span class="kpi-title">TAY CHÂN MIỆNG (TCM)</span>
+                <span id="guest-kpi-tcm" class="kpi-number" style="color:#fde047;">5.364</span>
+                <span class="kpi-trend trend-yellow">
+                  <i class="fa-solid fa-children"></i> 23.1% - Trẻ mầm non
+                </span>
+              </div>
             </div>
 
-            <div class="guest-kpi-card card-cum">
-              <div class="guest-kpi-head">
-                <span>CÚM MÙA & HÔ HẤP CẤP</span>
+            <div class="kpi-glass-card kpi-glow-emerald">
+              <div class="kpi-icon-box emerald-glow">
                 <i class="fa-solid fa-lungs-virus"></i>
               </div>
-              <div id="guest-kpi-cum" class="guest-kpi-num">3.047</div>
-              <div class="guest-kpi-note"><span class="badge-tag tag-cyan">13.1%</span> Hội chứng cúm theo dõi</div>
-            </div>
-
-            <div class="guest-kpi-card card-lao">
-              <div class="guest-kpi-head">
-                <span>BỆNH LAO & TRUYỀN NHIỄM KHÁC</span>
-                <i class="fa-solid fa-virus"></i>
+              <div class="kpi-meta">
+                <span class="kpi-title">CÚM MÙA & HÔ HẤP</span>
+                <span id="guest-kpi-cum" class="kpi-number" style="color:#34d399;">3.047</span>
+                <span class="kpi-trend trend-emerald">
+                  <i class="fa-solid fa-virus"></i> 13.1% - Hội chứng cúm
+                </span>
               </div>
-              <div id="guest-kpi-lao" class="guest-kpi-num">2.917</div>
-              <div class="guest-kpi-note"><span class="badge-tag tag-purple">12.6%</span> Chương trình điều trị CDC</div>
             </div>
 
-            <div class="guest-kpi-card card-status">
-              <div class="guest-kpi-head">
-                <span>TÌNH TRẠNG ĐIỀU TRỊ</span>
+            <div class="kpi-glass-card kpi-glow-purple">
+              <div class="kpi-icon-box purple-glow">
                 <i class="fa-solid fa-heart-pulse"></i>
               </div>
-              <div class="guest-status-breakdown">
-                <div><span>Ngoại trú:</span> <b id="guest-st-out">15.867</b></div>
-                <div><span>Nội trú:</span> <b id="guest-st-in">5.293</b></div>
-                <div><span>Ra viện:</span> <b id="guest-st-dis">2.049</b></div>
+              <div class="kpi-meta">
+                <span class="kpi-title">TÌNH TRẠNG ĐIỀU TRỊ</span>
+                <div class="kpi-sub-stats">
+                  <div><span>Ngoại trú:</span> <b id="guest-st-out">15.867</b></div>
+                  <div><span>Nội trú:</span> <b id="guest-st-in">5.293</b></div>
+                  <div><span>Ra viện:</span> <b id="guest-st-dis" style="color:#34d399;">2.049</b></div>
+                </div>
+                <span class="kpi-trend trend-green">
+                  <i class="fa-solid fa-circle-check"></i> 92.4% phục hồi tốt
+                </span>
               </div>
-              <div class="guest-kpi-note" style="color:#10b981;"><i class="fa-solid fa-check-circle"></i> Tỉ lệ phục hồi tích cực</div>
             </div>
           </div>
 
-          <!-- BIỂU ĐỒ TRỰC QUAN CHO GIAO DIỆN KHÁCH -->
-          <div class="guest-charts-row">
-            <div class="guest-chart-box">
-              <div class="guest-chart-title">
+          <!-- HÀNG BIỂU ĐỒ TÌNH HÌNH DỊCH 1: DIỄN TIẾN THEO THÁNG & CƠ CẤU BỆNH -->
+          <div class="charts-primary-row">
+            
+            <!-- BIỂU ĐỒ DIỄN TIẾN CA BỆNH THEO THÁNG -->
+            <div class="chart-glass-panel panel-trend">
+              <div class="panel-header">
                 <div>
-                  <i class="fa-solid fa-chart-line" style="color:var(--accent-cyan); margin-right:6px;"></i>
-                  <span>DIỄN BIẾN SỐ CA BỆNH THEO THÁNG TẠI TP. ĐÀ NẴNG</span>
+                  <div class="panel-tag"><i class="fa-solid fa-chart-line"></i> DIỄN BIẾN THỜI GIAN</div>
+                  <h3 class="panel-title">Tình Hình Ca Mắc Theo Tháng Tại TP. Đà Nẵng</h3>
                 </div>
-                <span class="chart-subtitle">Giai đoạn 2025 - 2026</span>
+                <div class="legend-pills">
+                  <span class="pill-sxh"><span class="pill-dot"></span> Sốt xuất huyết</span>
+                  <span class="pill-other"><span class="pill-dot"></span> Bệnh khác</span>
+                  <span class="pill-total"><span class="pill-line"></span> Tổng ca</span>
+                </div>
               </div>
-              <div class="guest-chart-canvas">
+              <div class="panel-body chart-container-trend">
                 <canvas id="guest-chart-trend"></canvas>
               </div>
             </div>
 
-            <div class="guest-chart-box">
-              <div class="guest-chart-title">
+            <!-- BIỂU ĐỒ CƠ CẤU CÁC NHÓM BỆNH -->
+            <div class="chart-glass-panel panel-disease">
+              <div class="panel-header">
                 <div>
-                  <i class="fa-solid fa-chart-pie" style="color:var(--accent-orange); margin-right:6px;"></i>
-                  <span>CƠ CẤU CÁC NHÓM BỆNH TRUYỀN NHIỄM</span>
+                  <div class="panel-tag"><i class="fa-solid fa-chart-pie"></i> CƠ CẤU BỆNH TẬT</div>
+                  <h3 class="panel-title">Tỉ Lệ Các Nhóm Dịch Bệnh</h3>
                 </div>
-                <span class="chart-subtitle">Tỉ lệ phần trăm (%)</span>
+                <span class="badge-accent">Toàn Thành Phố</span>
               </div>
-              <div class="guest-chart-canvas">
+              <div class="panel-body chart-container-disease">
                 <canvas id="guest-chart-disease"></canvas>
               </div>
             </div>
+
           </div>
 
-          <!-- BẢNG THỐNG KÊ TỔNG HỢP CA BỆNH THEO QUẬN / HUYỆN ĐÀ NẴNG -->
-          <div class="guest-table-box">
-            <div class="guest-table-title">
-              <div>
-                <i class="fa-solid fa-map-location-dot" style="color:#38bdf8; margin-right:6px;"></i>
-                <span>BẢNG TỔNG HỢP CA BỆNH THEO QUẬN / HUYỆN TP. ĐÀ NẴNG</span>
+          <!-- HÀNG BIỂU ĐỒ TÌNH HÌNH DỊCH 2: SO SÁNH 7 QUẬN/HUYỆN & PHÂN VÙNG NGUY CƠ -->
+          <div class="charts-secondary-row">
+
+            <!-- BIỂU ĐỒ THANH XẾP CHỒNG 7 QUẬN/HUYỆN -->
+            <div class="chart-glass-panel panel-districts-chart">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-tag"><i class="fa-solid fa-chart-simple"></i> SO SÁNH ĐỊA BÀN</div>
+                  <h3 class="panel-title">Phân Bố Ca Bệnh Theo 7 Quận / Huyện TP. Đà Nẵng</h3>
+                </div>
+                <span class="badge-subtitle">Xếp chồng theo nhóm bệnh</span>
               </div>
-              <span class="guest-badge-secure">
-                <i class="fa-solid fa-shield-halved"></i> Thống kê tổng hợp (Không định vị tọa độ cá nhân)
+              <div class="panel-body chart-container-districts">
+                <canvas id="guest-chart-districts"></canvas>
+              </div>
+            </div>
+
+            <!-- PHÂN VÙNG MỨC ĐỘ NGUY CƠ ĐỊA BÀN (RISK HEATMAP TILES) -->
+            <div class="chart-glass-panel panel-risk-tiles">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-tag"><i class="fa-solid fa-map-location-dot"></i> BẢN ĐỒ VĨ MÔ</div>
+                  <h3 class="panel-title">Mức Độ Cảnh Báo Nguy Cơ Dịch</h3>
+                </div>
+                <span class="badge-live-pulse"><i class="fa-solid fa-circle-dot"></i> Live Risk</span>
+              </div>
+              <div class="panel-body">
+                <div class="risk-district-grid">
+                  <div class="district-risk-card risk-high">
+                    <div class="d-risk-header">
+                      <span class="d-name">Quận Liên Chiểu</span>
+                      <span class="d-badge badge-high">Nguy cơ cao</span>
+                    </div>
+                    <div class="d-numbers">
+                      <div><b>2.300</b> ca bệnh</div>
+                      <div class="d-sub">SXH: 1.276 | TCM: 501</div>
+                    </div>
+                    <div class="d-bar"><div style="width:100%; background:#ef4444;"></div></div>
+                  </div>
+
+                  <div class="district-risk-card risk-high">
+                    <div class="d-risk-header">
+                      <span class="d-name">Quận Thanh Khê</span>
+                      <span class="d-badge badge-high">Nguy cơ cao</span>
+                    </div>
+                    <div class="d-numbers">
+                      <div><b>2.159</b> ca bệnh</div>
+                      <div class="d-sub">SXH: 1.341 | TCM: 493</div>
+                    </div>
+                    <div class="d-bar"><div style="width:94%; background:#ef4444;"></div></div>
+                  </div>
+
+                  <div class="district-risk-card risk-med">
+                    <div class="d-risk-header">
+                      <span class="d-name">Quận Cẩm Lệ</span>
+                      <span class="d-badge badge-med">Theo dõi chặt</span>
+                    </div>
+                    <div class="d-numbers">
+                      <div><b>1.814</b> ca bệnh</div>
+                      <div class="d-sub">SXH: 867 | TCM: 414</div>
+                    </div>
+                    <div class="d-bar"><div style="width:78%; background:#f97316;"></div></div>
+                  </div>
+
+                  <div class="district-risk-card risk-med">
+                    <div class="d-risk-header">
+                      <span class="d-name">Quận Sơn Trà</span>
+                      <span class="d-badge badge-med">Theo dõi chặt</span>
+                    </div>
+                    <div class="d-numbers">
+                      <div><b>1.781</b> ca bệnh</div>
+                      <div class="d-sub">SXH: 1.310 | TCM: 297</div>
+                    </div>
+                    <div class="d-bar"><div style="width:77%; background:#f97316;"></div></div>
+                  </div>
+
+                  <div class="district-risk-card risk-med">
+                    <div class="d-risk-header">
+                      <span class="d-name">Quận Ngũ Hành Sơn</span>
+                      <span class="d-badge badge-med">Theo dõi chặt</span>
+                    </div>
+                    <div class="d-numbers">
+                      <div><b>1.693</b> ca bệnh</div>
+                      <div class="d-sub">SXH: 1.218 | TCM: 284</div>
+                    </div>
+                    <div class="d-bar"><div style="width:73%; background:#f97316;"></div></div>
+                  </div>
+
+                  <div class="district-risk-card risk-low">
+                    <div class="d-risk-header">
+                      <span class="d-name">Quận Hải Châu</span>
+                      <span class="d-badge badge-low">Kiểm soát tốt</span>
+                    </div>
+                    <div class="d-numbers">
+                      <div><b>1.103</b> ca bệnh</div>
+                      <div class="d-sub">SXH: 547 | TCM: 297</div>
+                    </div>
+                    <div class="d-bar"><div style="width:48%; background:#eab308;"></div></div>
+                  </div>
+
+                  <div class="district-risk-card risk-safe">
+                    <div class="d-risk-header">
+                      <span class="d-name">Huyện Hòa Vang</span>
+                      <span class="d-badge badge-safe">Vùng an toàn</span>
+                    </div>
+                    <div class="d-numbers">
+                      <div><b>615</b> ca bệnh</div>
+                      <div class="d-sub">SXH: 310 | TCM: 167</div>
+                    </div>
+                    <div class="d-bar"><div style="width:26%; background:#10b981;"></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- BẢNG THỐNG KÊ CHI TIẾT THEO ĐỊA BÀN -->
+          <div class="chart-glass-panel panel-table">
+            <div class="panel-header">
+              <div>
+                <div class="panel-tag"><i class="fa-solid fa-table-list"></i> DỮ LIỆU TỔNG HỢP</div>
+                <h3 class="panel-title">Bảng Thống Kê Dịch Bệnh Theo Địa Bàn Trọng Điểm Đà Nẵng</h3>
+              </div>
+              <span class="badge-secure-data">
+                <i class="fa-solid fa-shield-halved"></i> Dữ liệu vĩ mô (Không chứa tọa độ cá nhân)
               </span>
             </div>
-            <div class="guest-table-wrapper">
-              <table class="guest-summary-table">
+            <div class="panel-body table-responsive">
+              <table class="glass-table">
                 <thead>
                   <tr>
-                    <th>Quận / Huyện</th>
+                    <th>Địa Bàn</th>
                     <th style="text-align:right;">Sốt Xuất Huyết</th>
                     <th style="text-align:right;">Tay Chân Miệng</th>
                     <th style="text-align:right;">Cúm Mùa</th>
                     <th style="text-align:right;">Bệnh Khác</th>
                     <th style="text-align:right;">Tổng Số Ca</th>
                     <th style="text-align:center;">Tỉ Lệ Đóng Góp</th>
-                    <th style="text-align:center;">Mức Độ Cảnh Báo</th>
+                    <th style="text-align:center;">Phân Cấp Nguy Cơ</th>
                   </tr>
                 </thead>
                 <tbody id="guest-districts-table-body">
-                  <!-- Render động bằng JavaScript -->
+                  <!-- Render động bằng JS -->
                 </tbody>
               </table>
             </div>
           </div>
 
-          <!-- KHUYẾN CÁO Y TẾ DỰ PHÒNG CỦA CDC ĐÀ NẴNG -->
-          <div class="guest-recommendations-row">
-            <div class="recommendation-card">
-              <div class="rec-icon" style="background:rgba(249,115,22,0.15); color:var(--accent-orange);">
-                <i class="fa-solid fa-mosquito-net"></i>
-              </div>
-              <div class="rec-content">
-                <h4>Phòng chống Sốt xuất huyết Dengue</h4>
-                <p>
-                  Dành 10-15 phút mỗi tuần để diệt bọ gậy, lăng quăng; đậy kín các dụng cụ chứa nước sinh hoạt; 
-                  thay nước bình hoa; ngủ màn cả ban ngày để ngăn muỗi vằn đốt.
-                </p>
+          <!-- KHUYẾN CÁO PHÒNG DỊCH & HOTLINE -->
+          <div class="guidance-grid">
+            <div class="guidance-card guide-sxh">
+              <div class="guide-icon"><i class="fa-solid fa-mosquito-net"></i></div>
+              <div class="guide-body">
+                <h4>Phòng Chống Sốt Xuất Huyết</h4>
+                <p>Diệt bọ gậy/lăng quăng hàng tuần; đậy kín các dụng cụ chứa nước; ngủ màn cả ban ngày để ngăn muỗi truyền bệnh.</p>
               </div>
             </div>
 
-            <div class="recommendation-card">
-              <div class="rec-icon" style="background:rgba(234,179,8,0.15); color:var(--accent-yellow);">
-                <i class="fa-solid fa-hands-bubbles"></i>
-              </div>
-              <div class="rec-content">
-                <h4>Phòng chống Tay chân miệng</h4>
-                <p>
-                  Rửa tay thường xuyên bằng xà phòng dưới vòi nước chảy cho cả người chăm sóc và trẻ nhỏ; 
-                  thực hiện ăn chín uống sôi; lau sạch đồ chơi và sàn nhà hàng ngày bằng xà phòng hoặc dung dịch sát khuẩn.
-                </p>
+            <div class="guidance-card guide-tcm">
+              <div class="guide-icon"><i class="fa-solid fa-hands-bubbles"></i></div>
+              <div class="guide-body">
+                <h4>Phòng Chống Tay Chân Miệng</h4>
+                <p>Rửa tay thường xuyên bằng xà phòng; thực hiện ăn chín uống sôi; vệ sinh đồ chơi và bề mặt tiếp xúc của trẻ nhỏ.</p>
               </div>
             </div>
 
-            <div class="recommendation-card">
-              <div class="rec-icon" style="background:rgba(6,182,212,0.15); color:var(--accent-cyan);">
-                <i class="fa-solid fa-phone-volume"></i>
-              </div>
-              <div class="rec-content">
-                <h4>Đường dây nóng CDC Đà Nẵng</h4>
-                <p>
-                  Khi có biểu hiện sốt cao đột ngột hoặc dấu hiệu dịch bệnh nghi ngờ, hãy thông báo ngay cho Trạm Y tế gần nhất 
-                  hoặc Hotline CDC Đà Nẵng: <b>0236.3821.469</b> / <b>1900.9095</b> để được hỗ trợ.
-                </p>
+            <div class="guidance-card guide-hotline">
+              <div class="guide-icon"><i class="fa-solid fa-headset"></i></div>
+              <div class="guide-body">
+                <h4>Hotline CDC Đà Nẵng</h4>
+                <p>Tiếp nhận thông tin báo dịch 24/7: <b style="color:#38bdf8;">0236.3821.469</b> hoặc <b style="color:#38bdf8;">1900.9095</b>.</p>
               </div>
             </div>
           </div>
 
-          <!-- CALL TO ACTION BANNER -->
-          <div class="guest-cta-banner">
-            <div class="cta-text">
-              <h3><i class="fa-solid fa-hospital-user" style="color:var(--accent-cyan); margin-right:8px;"></i> Cán bộ Y tế hoặc Chuyên viên Dịch tễ CDC?</h3>
-              <p>Đăng nhập tài khoản được cấp để mở khóa Bản đồ GIS tương tác, xem định vị tọa độ chi tiết trên địa bàn quản lý, kích hoạt bán kính đệm 200m và tổ chức xử lý ổ dịch.</p>
+          <!-- FOOTER CALL TO ACTION -->
+          <div class="cta-glass-banner">
+            <div class="cta-left">
+              <h3><i class="fa-solid fa-user-doctor" style="color:var(--accent-cyan); margin-right:8px;"></i> Bạn là Cán bộ Y tế hoặc Quản lý Dịch tễ?</h3>
+              <p>Đăng nhập để mở khóa Bản đồ GIS vệ tinh trực tuyến, giám sát bán kính vùng đệm 200m và tổ chức dập dịch thực địa.</p>
             </div>
-            <button class="btn-cta-login" onclick="openLoginModal()">
-              <i class="fa-solid fa-lock-open"></i> Đăng Nhập Bản Đồ GIS
-            </button>
+            <div class="cta-right">
+              <button class="btn-cta-unlock" onclick="openLoginModal()">
+                <i class="fa-solid fa-key"></i> Đăng Nhập Hệ Thống Bản Đồ GIS
+              </button>
+            </div>
           </div>
 
         </div>
@@ -665,6 +804,30 @@
 
         <!-- FORM ĐĂNG NHẬP THÔNG THƯỜNG -->
         <div id="box-login-normal">
+          <!-- GỢI Ý ĐĂNG NHẬP NHANH 1-CLICK -->
+          <div class="quick-login-box">
+            <div class="quick-login-title">
+              <i class="fa-solid fa-bolt" style="color:var(--accent-orange);"></i>
+              <span>Chọn tài khoản mẫu để đăng nhập ngay:</span>
+            </div>
+            <div class="quick-login-grid">
+              <button type="button" class="btn-quick-chip chip-admin" onclick="quickFillLogin('admin', 'admin123')">
+                <i class="fa-solid fa-user-shield" style="color:#06b6d4;"></i>
+                <div style="text-align:left;">
+                  <div style="font-weight:700;">Admin CDC Đà Nẵng</div>
+                  <div style="font-size:0.65rem; opacity:0.85;">admin / admin123 (Toàn TP)</div>
+                </div>
+              </button>
+              <button type="button" class="btn-quick-chip chip-tyt" onclick="quickFillLogin('tyt_hoacuong', 'tyt123')">
+                <i class="fa-solid fa-house-medical" style="color:#10b981;"></i>
+                <div style="text-align:left;">
+                  <div style="font-weight:700;">Trạm Y Tế Hòa Cường</div>
+                  <div style="font-size:0.65rem; opacity:0.85;">tyt_hoacuong / tyt123</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
           <form id="form-login" onsubmit="event.preventDefault(); handleLoginSubmit();">
             <div class="form-group" style="margin-bottom:0.75rem;">
               <label class="form-label" for="login-username">Tên đăng nhập:</label>
@@ -829,10 +992,7 @@
   <script src="danang_facilities.js"></script>
   <script src="data_epidemiology.js"></script>
 
-  <!-- 8. XÁC THỰC & PHÂN QUYỀN TRẠM Y TẾ / ADMIN -->
-  <script src="auth.js"></script>
-
-  <!-- 9. CORE APPLICATION LOGIC -->
+  <!-- 8. CORE APPLICATION LOGIC -->
   <script src="app.js"></script>
 
 </body>

@@ -61,7 +61,7 @@
       <!-- KHU VỰC TÀI KHOẢN & PHÂN QUYỀN -->
       <div id="auth-actions" style="display:flex; align-items:center; gap:0.5rem; margin-left:0.5rem; border-left:1px solid var(--border-color); padding-left:0.75rem;">
         <!-- Khi Chưa đăng nhập -->
-        <button id="btn-open-login" class="btn-header btn-login" title="Đăng nhập để xem đầy đủ thông tin hoặc quản lý">
+        <button id="btn-open-login" class="btn-header btn-login" onclick="openLoginModal()" title="Đăng nhập để xem đầy đủ thông tin hoặc quản lý">
           <i class="fa-solid fa-right-to-bracket"></i>
           <span>Đăng Nhập</span>
         </button>
@@ -78,13 +78,13 @@
         </div>
 
         <!-- Nút Quản lý tài khoản Trạm Y tế (Dành cho Admin) -->
-        <button id="btn-open-manage-users" class="btn-header btn-manage" style="display:none;" title="Quản lý tài khoản Trạm Y tế xã/phường">
+        <button id="btn-open-manage-users" class="btn-header btn-manage" onclick="openUsersModal()" style="display:none;" title="Quản lý tài khoản Trạm Y tế xã/phường">
           <i class="fa-solid fa-users-gear"></i>
           <span>Quản Lý TYT</span>
         </button>
 
         <!-- Nút Đăng xuất -->
-        <button id="btn-logout" class="btn-header btn-logout" style="display:none;" title="Đăng xuất">
+        <button id="btn-logout" class="btn-header btn-logout" onclick="handleLogoutClick()" style="display:none;" title="Đăng xuất">
           <i class="fa-solid fa-arrow-right-from-bracket"></i>
         </button>
       </div>
@@ -445,7 +445,7 @@
     <div class="modal-box" style="max-width:440px;">
       <div class="modal-header">
         <h3 id="login-modal-title"><i class="fa-solid fa-shield-halved" style="color:var(--accent-cyan);"></i> Đăng Nhập Hệ Thống Dịch Tễ</h3>
-        <button id="btn-close-login" class="modal-close">&times;</button>
+        <button id="btn-close-login" class="modal-close" onclick="closeLoginModal()">&times;</button>
       </div>
       <div class="modal-body">
         <div id="login-error-msg" style="display:none; padding:0.5rem 0.75rem; border-radius:6px; background:rgba(239,68,68,0.2); border:1px solid #ef4444; color:#fca5a5; font-size:0.75rem; margin-bottom:0.75rem;"></div>
@@ -517,7 +517,7 @@
     <div class="modal-box" style="max-width:680px;">
       <div class="modal-header">
         <h3><i class="fa-solid fa-users-gear" style="color:#8b5cf6;"></i> Quản Lý Tài Khoản Trạm Y Tế Xã / Phường</h3>
-        <button id="btn-close-users" class="modal-close">&times;</button>
+        <button id="btn-close-users" class="modal-close" onclick="closeUsersModal()">&times;</button>
       </div>
       <div class="modal-body">
         

@@ -8,7 +8,11 @@
 Hệ thống là giải pháp **Bản đồ Dịch tễ học số (Digital Epidemiology Map)** phục vụ Trung tâm Kiểm soát bệnh tật TP. Đà Nẵng (CDC Đà Nẵng). Ứng dụng tích hợp trực tiếp toàn bộ dữ liệu thực tế từ file `Danh_sach_ca_benh.xlsx` với **hơn 23.900 ca bệnh** và mạng lưới cơ sở y tế trên toàn địa bàn.
 
 ### CÁC TÍNH NĂNG CHÍNH:
-1. **Hệ thống 7 Lớp bản đồ GIS**:
+1. **Hệ thống Đăng nhập & Phân quyền Quản lý Dịch tễ (RBAC)**:
+   - **Chưa đăng nhập (Khách / Công cộng)**: Xem được bản đồ nhiệt và phân bố ca bệnh, nhưng **toàn bộ thông tin nhạy cảm (Địa bàn, Đơn vị điều trị, Tọa độ GPS chi tiết) bị ẩn danh và khóa kín**.
+   - **Quản trị viên (Admin CDC)**: Đăng nhập thấy toàn quyền 100%, xem chi tiết toàn bộ các ca bệnh của 94 xã/phường trên toàn thành phố, nạp Excel, giả lập ca bệnh và **Quản lý / Tạo mới tài khoản cho các Trạm Y tế**.
+   - **Trạm Y tế xã/phường (TYT)**: Sau khi đăng nhập, hệ thống **tự động giới hạn và chỉ hiển thị các ca bệnh thuộc địa bàn trạm mình quản lý** (ví dụ Trạm Y tế Phường Hòa Khánh chỉ thấy 1.278 ca bệnh của Hòa Khánh), bản đồ tự động phóng to về địa bàn trạm để điều tra và dập dịch.
+2. **Hệ thống 7 Lớp bản đồ GIS**:
    - **Layer 1 (Admin Boundaries)**: Ranh giới hành chính các quận/huyện trên địa bàn TP. Đà Nẵng (Hải Châu, Thanh Khê, Liên Chiểu, Ngũ Hành Sơn, Cẩm Lệ, Sơn Trà, Hòa Vang).
    - **Layer 2 (Point Layer)**: Lớp điểm ca bệnh thời gian thực theo mã màu chuẩn: Sốt xuất huyết (Cam), Tay chân miệng (Vàng), Cúm (Xanh cyan), Lao (Tím), Sởi (Đỏ), Sốt rét (Nâu đỏ)... Click vào từng điểm để mở popup hồ sơ bệnh án chuẩn Thông tư 15 BYT.
    - **Layer 3 (Buffer Zone 200m & Outbreak Alarm)**: Tự động tính toán và vẽ vòng tròn bán kính 200m quanh các ca Sốt xuất huyết. Tự động phát hiện khi các vùng đệm giao nhau ($\le 400m$) trong cùng chu kỳ dịch để cảnh báo nguy cơ hình thành ổ dịch tập trung.
@@ -59,6 +63,7 @@ Hệ thống đã tích hợp sẵn cơ chế **Direct Public Tiles** cho phép 
 |---|---|
 | `index.html` | Giao diện chính của Trung tâm điều hành dịch tễ CDC Đà Nẵng |
 | `styles.css` | Bộ thiết kế giao diện hiện đại (Dark Theme & GIS overlays) |
+| `auth.js` | Module xác thực & phân quyền RBAC (Quản lý tài khoản Admin & Trạm Y tế) |
 | `app.js` | Module xử lý GIS, Leaflet, Turf.js tính toán không gian và điều khiển biểu đồ |
 | `Danh_sach_ca_benh.xlsx` | Dữ liệu gốc báo cáo dịch tễ Bộ Y tế (TT15 & QĐ 4922) |
 | `process_data.py` | Script tiền xử lý dữ liệu và tự động gán tọa độ không gian (Geocoding) |

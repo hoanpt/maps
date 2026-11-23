@@ -828,3 +828,243 @@ body {
   font-size: 0.82rem;
   color: var(--text-muted);
 }
+
+
+/* ==========================================================================
+   AUTHENTICATION & USER PROFILE STYLES
+   ========================================================================== */
+.user-profile-widget {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: rgba(15, 23, 42, 0.7);
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+.avatar-admin {
+  background: linear-gradient(135deg, #ef4444, #8b5cf6);
+  border: 1px solid #f87171;
+}
+
+.avatar-tyt {
+  background: linear-gradient(135deg, #0ea5e9, #10b981);
+  border: 1px solid #38bdf8;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.2;
+  max-width: 170px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.role-admin {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.role-tyt {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.btn-login {
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  color: #ffffff;
+  border: 1px solid #38bdf8;
+  box-shadow: 0 0 12px rgba(14, 165, 233, 0.35);
+  font-weight: 600;
+}
+
+.btn-login:hover {
+  background: linear-gradient(135deg, #0369a1, #1d4ed8);
+  box-shadow: 0 0 16px rgba(14, 165, 233, 0.6);
+}
+
+.btn-manage {
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  color: #c4b5fd;
+}
+
+.btn-manage:hover {
+  background: #8b5cf6;
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.btn-logout {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.btn-logout:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: transparent;
+}
+
+/* SCOPE BANNER TRÊN SIDEBAR */
+.scope-alert-card {
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.73rem;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.scope-guest {
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  color: #fde047;
+}
+
+.scope-admin {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.scope-tyt {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+
+/* THÔNG TIN BỊ KHÓA / CHE TRONG POPUP CHO KHÁCH */
+.masked-field {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px dashed #64748b;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.popup-login-prompt {
+  margin-top: 0.55rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  background: rgba(2, 132, 199, 0.15);
+  border: 1px solid rgba(2, 132, 199, 0.4);
+  font-size: 0.7rem;
+  color: #7dd3fc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+.btn-popup-login {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-popup-login:hover {
+  background: #0369a1;
+}
+
+/* BẢNG QUẢN LÝ TÀI KHOẢN (USER MANAGEMENT TABLE) */
+.user-table-wrapper {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.74rem;
+  text-align: left;
+}
+
+.user-table th {
+  background: #0f172a;
+  padding: 0.5rem 0.65rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.user-table td {
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+  color: #e2e8f0;
+}
+
+.user-table tr:hover {
+  background: rgba(51, 65, 85, 0.3);
+}
+
+.btn-action-del {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.68rem;
+}
+
+.btn-action-del:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+

@@ -8,6 +8,10 @@
 Hệ thống **Bản đồ Dịch tễ học số** là giải pháp Web GIS chuyên sâu phục vụ công tác giám sát, phân tích không gian và điều hành dập dịch bệnh truyền nhiễm (Sốt xuất huyết Dengue, Tay chân miệng, Cúm, Lao, Sởi, Sốt rét...).
 
 ### TÍNH NĂNG NỔI BẬT:
+* **Hệ thống Đăng nhập & Phân quyền theo địa bàn (RBAC Engine)**:
+  - **Chưa đăng nhập (Khách / Public)**: Chỉ xem được tổng quan bản đồ mật độ, **toàn bộ thông tin nhạy cảm (Địa chỉ, Tọa độ GPS chi tiết, Cơ sở điều trị) bị ẩn danh và khóa kín**.
+  - **Quản trị viên (Admin CDC)**: Toàn quyền truy cập cả thành phố, xem chi tiết 100% dữ liệu của 94 xã/phường, nạp file Excel mới, giả lập ca bệnh và **quản lý / tạo tài khoản cho các Trạm Y tế**.
+  - **Trạm Y tế xã/phường (TYT)**: Sau khi đăng nhập, hệ thống **tự động giới hạn và chỉ hiển thị các ca bệnh thuộc địa bàn trạm mình quản lý** (ví dụ Trạm Y tế Phường Hòa Khánh chỉ thấy 1.278 ca bệnh của Hòa Khánh), bản đồ tự động phóng to về địa bàn trạm để điều tra và dập dịch.
 * **7 Lớp bản đồ GIS chuyên nghiệp**: Ranh giới hành chính, Điểm ca bệnh thời gian thực (Cluster), Vùng đệm 200m tự động quanh ca SXH, Bản đồ nhiệt mật độ (Heatmap), và Mạng lưới cơ sở y tế (CDC, 7 TTYT quận/huyện, Bệnh viện điều trị).
 * **Thuật toán tự động phát hiện ổ dịch giao thoa**: Khi $\ge 2$ ca Sốt xuất huyết có vùng đệm 200m giao nhau ($\le 400m$), hệ thống tự động đổi viền đỏ báo động nguy cơ bùng phát ổ dịch.
 * **Bản đồ nền 100% miễn phí**: Tích hợp Google Maps Đường phố tiếng Việt, Google Maps Vệ tinh Hybrid, Bản đồ Tối CDC, Bản đồ Giao thông OSM HOT. Không cần API Key, không lo bị chặn.
@@ -16,7 +20,22 @@ Hệ thống **Bản đồ Dịch tễ học số** là giải pháp Web GIS chu
 
 ---
 
-## 2. BÁO CÁO CƠ CHẾ BẢO MẬT (SECURITY AUDIT)
+## 2. QUY TRÌNH THIẾT LẬP & PHÂN QUYỀN TÀI KHOẢN (BẢO MẬT)
+
+Để đảm bảo tuyệt đối an toàn thông tin, hệ thống **không lưu trữ hay đính kèm bất kỳ mật khẩu mặc định nào trong mã nguồn**:
+
+1. **Khởi tạo lần đầu (First-run Setup)**:
+   - Khi truy cập hệ thống lần đầu, người quản trị bấm vào nút **"Đăng Nhập"**.
+   - Hệ thống tự động kích hoạt giao diện **Khởi tạo Quản trị viên ban đầu**: Cho phép Quản trị viên CDC tự đặt Tên đăng nhập và Mật khẩu bảo mật riêng của đơn vị.
+   - Mật khẩu được mã hóa băm một chiều bằng thuật toán mật mã học **SHA-256 kết hợp chuỗi muối (Salt) 128-bit ngẫu nhiên**.
+2. **Quản trị & Cấp tài khoản Trạm Y tế**:
+   - Sau khi đăng nhập, Quản trị viên bấm nút **"Quản Lý TYT"** trên thanh tiêu đề.
+   - Quản trị viên tự tạo tài khoản, đặt mật khẩu và phân công địa bàn quản lý (trong số 94 xã/phường) cho từng Trạm Y tế cơ sở.
+   - Mỗi Trạm Y tế sau khi đăng nhập chỉ xem và quản lý ca bệnh thuộc đúng địa bàn được phân công.
+
+---
+
+## 3. BÁO CÁO CƠ CHẾ BẢO MẬT (SECURITY AUDIT)
 
 Hệ thống được thiết kế tuân thủ nghiêm ngặt các quy chuẩn an toàn thông tin và quyền riêng tư dữ liệu y tế:
 

@@ -57,6 +57,37 @@
         <i class="fa-solid fa-print"></i>
         <span>Báo Cáo</span>
       </button>
+
+      <!-- KHU VỰC TÀI KHOẢN & PHÂN QUYỀN -->
+      <div id="auth-actions" style="display:flex; align-items:center; gap:0.5rem; margin-left:0.5rem; border-left:1px solid var(--border-color); padding-left:0.75rem;">
+        <!-- Khi Chưa đăng nhập -->
+        <button id="btn-open-login" class="btn-header btn-login" title="Đăng nhập để xem đầy đủ thông tin hoặc quản lý">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          <span>Đăng Nhập</span>
+        </button>
+
+        <!-- Khi Đã đăng nhập -->
+        <div id="user-profile-box" class="user-profile-widget" style="display:none;">
+          <div id="user-avatar-badge" class="user-avatar avatar-admin">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div class="user-details">
+            <span id="user-display-name" class="user-name">Đang tải...</span>
+            <span id="user-display-role" class="user-role-badge role-admin">ADMIN</span>
+          </div>
+        </div>
+
+        <!-- Nút Quản lý tài khoản Trạm Y tế (Dành cho Admin) -->
+        <button id="btn-open-manage-users" class="btn-header btn-manage" style="display:none;" title="Quản lý tài khoản Trạm Y tế xã/phường">
+          <i class="fa-solid fa-users-gear"></i>
+          <span>Quản Lý TYT</span>
+        </button>
+
+        <!-- Nút Đăng xuất -->
+        <button id="btn-logout" class="btn-header btn-logout" style="display:none;" title="Đăng xuất">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -71,6 +102,17 @@
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-content">
         
+        <!-- PHẠM VI QUYỀN HẠN DỮ LIỆU (SCOPE ALERT BANNER) -->
+        <div id="scope-banner" class="scope-alert-card scope-guest">
+          <i id="scope-icon" class="fa-solid fa-lock" style="font-size:0.95rem; margin-top:0.1rem;"></i>
+          <div>
+            <div id="scope-title" style="font-weight:700;">CHẾ ĐỘ KHÁCH (CHƯA ĐĂNG NHẬP)</div>
+            <div id="scope-desc" style="font-size:0.68rem; opacity:0.9;">
+              Thông tin chi tiết địa chỉ & đơn vị tiếp nhận bị ẩn danh. Đăng nhập để mở khóa đầy đủ.
+            </div>
+          </div>
+        </div>
+
         <!-- KPI SUMMARY CARDS -->
         <div class="kpi-grid">
           <div class="kpi-card kpi-total">
@@ -397,6 +439,158 @@
   </div>
 
   <!-- ======================================================================
+       MODAL: ĐĂNG NHẬP HỆ THỐNG / THIẾT LẬP QUẢN TRỊ
+       ====================================================================== -->
+  <div id="modal-login" class="modal-overlay">
+    <div class="modal-box" style="max-width:440px;">
+      <div class="modal-header">
+        <h3 id="login-modal-title"><i class="fa-solid fa-shield-halved" style="color:var(--accent-cyan);"></i> Đăng Nhập Hệ Thống Dịch Tễ</h3>
+        <button id="btn-close-login" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="login-error-msg" style="display:none; padding:0.5rem 0.75rem; border-radius:6px; background:rgba(239,68,68,0.2); border:1px solid #ef4444; color:#fca5a5; font-size:0.75rem; margin-bottom:0.75rem;"></div>
+
+        <!-- FORM ĐĂNG NHẬP THÔNG THƯỜNG -->
+        <div id="box-login-normal">
+          <form id="form-login" onsubmit="event.preventDefault(); handleLoginSubmit();">
+            <div class="form-group" style="margin-bottom:0.75rem;">
+              <label class="form-label" for="login-username">Tên đăng nhập:</label>
+              <input type="text" id="login-username" class="form-input" placeholder="Nhập tên đăng nhập..." autocomplete="username" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom:1rem;">
+              <label class="form-label" for="login-password">Mật khẩu:</label>
+              <input type="password" id="login-password" class="form-input" placeholder="Nhập mật khẩu bảo mật..." autocomplete="current-password" required>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width:100%; padding:0.6rem; font-weight:600; font-size:0.85rem;">
+              <i class="fa-solid fa-lock-open" style="margin-right:0.35rem;"></i> Đăng Nhập
+            </button>
+          </form>
+          <div style="margin-top:0.75rem; font-size:0.7rem; color:var(--text-dim); text-align:center;">
+            <i class="fa-solid fa-shield"></i> Xác thực mã hóa mật mã học SHA-256 an toàn.
+          </div>
+        </div>
+
+        <!-- FORM KHỞI TẠO QUẢN TRỊ VIÊN BAN ĐẦU (FIRST-RUN SETUP) -->
+        <div id="box-first-run-setup" style="display:none;">
+          <div style="background:rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.3); border-radius:6px; padding:0.65rem; margin-bottom:0.75rem; font-size:0.72rem; color:#67e8f9; line-height:1.4;">
+            <i class="fa-solid fa-circle-info"></i> <b>KHỞI TẠO HỆ THỐNG LẦN ĐẦU:</b><br>
+            Vui lòng tự thiết lập tài khoản và mật khẩu bảo mật cho Quản trị viên (Admin). Mật khẩu được mã hóa SHA-256 và bảo vệ tuyệt đối.
+          </div>
+
+          <form id="form-setup-admin" onsubmit="event.preventDefault(); handleFirstRunSetup();">
+            <div class="form-group" style="margin-bottom:0.65rem;">
+              <label class="form-label" for="setup-username">Tên đăng nhập quản trị (*):</label>
+              <input type="text" id="setup-username" class="form-input" value="admin" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0.65rem;">
+              <label class="form-label" for="setup-fullname">Tên hiển thị (*):</label>
+              <input type="text" id="setup-fullname" class="form-input" value="Quản Trị Viên CDC Đà Nẵng" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0.65rem;">
+              <label class="form-label" for="setup-password">Mật khẩu quản trị (*):</label>
+              <input type="password" id="setup-password" class="form-input" placeholder="Tối thiểu 6 ký tự..." required>
+            </div>
+
+            <div class="form-group" style="margin-bottom:1rem;">
+              <label class="form-label" for="setup-password-confirm">Xác nhận lại mật khẩu (*):</label>
+              <input type="password" id="setup-password-confirm" class="form-input" placeholder="Nhập lại mật khẩu..." required>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width:100%; padding:0.6rem; font-weight:600; font-size:0.85rem; background:linear-gradient(135deg, #059669, #0284c7);">
+              <i class="fa-solid fa-key" style="margin-right:0.35rem;"></i> Thiết Lập Quản Trị & Đăng Nhập
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: QUẢN LÝ TÀI KHOẢN TRẠM Y TẾ (ADMIN ONLY)
+       ====================================================================== -->
+  <div id="modal-users" class="modal-overlay">
+    <div class="modal-box" style="max-width:680px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-users-gear" style="color:#8b5cf6;"></i> Quản Lý Tài Khoản Trạm Y Tế Xã / Phường</h3>
+        <button id="btn-close-users" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <div id="user-mgmt-msg" style="display:none; padding:0.5rem 0.75rem; border-radius:6px; font-size:0.75rem; margin-bottom:0.75rem;"></div>
+
+        <!-- DANH SÁCH TÀI KHOẢN HIỆN CÓ -->
+        <div style="font-size:0.78rem; font-weight:700; color:#ffffff; margin-bottom:0.45rem; display:flex; justify-content:space-between; align-items:center;">
+          <span>DANH SÁCH TÀI KHOẢN TRẠM Y TẾ ĐANG HOẠT ĐỘNG:</span>
+          <span id="user-count-badge" class="badge-disease badge-cum" style="font-size:0.65rem;">0 tài khoản</span>
+        </div>
+
+        <div class="user-table-wrapper">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>Tên đăng nhập</th>
+                <th>Tên Trạm Y Tế / Đơn vị</th>
+                <th>Quyền</th>
+                <th>Địa bàn phân công</th>
+                <th style="text-align:center;">Xóa</th>
+              </tr>
+            </thead>
+            <tbody id="user-table-body">
+              <!-- Render động bằng JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- FORM TẠO TÀI KHOẢN MỚI CHO TRẠM Y TẾ -->
+        <div style="border-top:1px solid var(--border-color); padding-top:0.85rem;">
+          <div style="font-size:0.78rem; font-weight:700; color:var(--accent-cyan); margin-bottom:0.65rem;">
+            <i class="fa-solid fa-user-plus"></i> TẠO TÀI KHOẢN MỚI CHO TRẠM Y TẾ:
+          </div>
+
+          <form id="form-create-user" onsubmit="event.preventDefault(); handleCreateUserSubmit();">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.65rem; margin-bottom:0.65rem;">
+              <div class="form-group">
+                <label class="form-label" for="new-username">Tên đăng nhập (*):</label>
+                <input type="text" id="new-username" class="form-input" placeholder="vd: tyt_hoavang..." required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="new-password">Mật khẩu khởi tạo (*):</label>
+                <input type="password" id="new-password" class="form-input" placeholder="Mật khẩu ít nhất 4 ký tự..." required>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:0.65rem; margin-bottom:0.85rem;">
+              <div class="form-group">
+                <label class="form-label" for="new-fullname">Tên Trạm Y Tế / Đơn vị (*):</label>
+                <input type="text" id="new-fullname" class="form-input" placeholder="vd: Trạm Y tế Xã Hòa Vang..." required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="new-ward">Địa bàn phân công quản lý (*):</label>
+                <select id="new-ward" class="form-select" required>
+                  <option value="">-- Chọn Xã / Phường --</option>
+                  <!-- Populate bằng JS -->
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width:100%; padding:0.55rem; font-weight:600;">
+              <i class="fa-solid fa-plus-circle" style="margin-right:0.35rem;"></i> Tạo Tài Khoản & Phân Quyền Trạm Y Tế
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
        SCRIPTS: THƯ VIỆN & DỮ LIỆU
        ====================================================================== -->
   <!-- 1. Leaflet Core JS -->
@@ -422,7 +616,10 @@
   <script src="danang_facilities.js"></script>
   <script src="data_epidemiology.js"></script>
 
-  <!-- 8. CORE APPLICATION LOGIC -->
+  <!-- 8. XÁC THỰC & PHÂN QUYỀN TRẠM Y TẾ / ADMIN -->
+  <script src="auth.js"></script>
+
+  <!-- 9. CORE APPLICATION LOGIC -->
   <script src="app.js"></script>
 
 </body>

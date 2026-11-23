@@ -17,6 +17,7 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Copy toàn bộ mã nguồn ứng dụng web và dữ liệu dịch tễ đã ẩn danh
 COPY index.html /usr/share/nginx/html/
 COPY styles.css /usr/share/nginx/html/
+COPY auth.js /usr/share/nginx/html/
 COPY app.js /usr/share/nginx/html/
 COPY danang_districts.js /usr/share/nginx/html/
 COPY danang_facilities.js /usr/share/nginx/html/

@@ -77,11 +77,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   
   // 3. Khởi tạo UI tương tác & Sự kiện
   initUIEvents();
+
+  // 4. Khởi tạo Hệ thống Xác thực & Phân quyền Trạm Y tế / Admin
+  initAuthSystem();
   
-  // 4. Khởi tạo các biểu đồ Chart.js
+  // 5. Khởi tạo các biểu đồ Chart.js
   initCharts();
   
-  // 5. Cập nhật hiển thị lần đầu
+  // 6. Cập nhật hiển thị lần đầu
   applyFilters();
 });
 
@@ -377,11 +380,14 @@ function updateEpidemiologyLayers() {
       fillOpacity: 0.85
     });
 
-    // Popup thông tin ca bệnh
+    // Kiểm tra quyền truy cập (Admin hoặc Trạm Y tế đã đăng nhập mới thấy full địa chỉ)
+    const isAuth = window.authService && window.authService.isAuthenticated();
+
+    // Popup thông tin ca bệnh (Áp dụng cơ chế bảo vệ quyền riêng tư)
     const popupContent = `
       <div class="case-popup">
         <div class="case-popup-header">
-          <span class="case-popup-title">Ca bệnh #${c.id}</span>
+          <span class="case-popup-title">${isAuth ? `Ca bệnh #${c.id}` : `Ca bệnh #${c.id.toString().substring(0, 3)}***`}</span>
           <span class="badge-disease" style="background:${color}22; color:${color}; border:1px solid ${color}66;">
             ${DISEASE_LABELS[c.grp] || c.d_name}
           </span>
@@ -405,16 +411,28 @@ function updateEpidemiologyLayers() {
           </div>
           <div class="case-popup-row">
             <span class="case-popup-label">Địa bàn:</span>
-            <span class="case-popup-val">${c.w}</span>
+            ${isAuth 
+              ? `<span class="case-popup-val">${c.w}</span>` 
+              : `<span class="masked-field"><i class="fa-solid fa-lock"></i> Đã ẩn danh</span>`}
           </div>
           <div class="case-popup-row">
             <span class="case-popup-label">Đơn vị tiếp nhận:</span>
-            <span class="case-popup-val" style="text-align:right; max-width:140px;">${c.fac || "CDC"}</span>
+            ${isAuth 
+              ? `<span class="case-popup-val" style="text-align:right; max-width:140px;">${c.fac || "CDC"}</span>` 
+              : `<span class="masked-field"><i class="fa-solid fa-lock"></i> Đã ẩn danh</span>`}
           </div>
           <div class="case-popup-row">
             <span class="case-popup-label">Tọa độ:</span>
-            <span class="case-popup-val">${c.lat.toFixed(4)}, ${c.lng.toFixed(4)} ${c.rc ? '🎯' : '📍'}</span>
+            ${isAuth 
+              ? `<span class="case-popup-val">${c.lat.toFixed(4)}, ${c.lng.toFixed(4)} ${c.rc ? '🎯' : '📍'}</span>` 
+              : `<span class="masked-field"><i class="fa-solid fa-location-crosshairs"></i> Vị trí ước tính</span>`}
           </div>
+
+          ${!isAuth ? `
+          <div class="popup-login-prompt">
+            <span><i class="fa-solid fa-shield-halved"></i> Thông tin địa chỉ & cơ sở điều trị được bảo mật.</span>
+            <button type="button" class="btn-popup-login" onclick="openLoginModal()">Đăng nhập tài khoản Y tế để xem</button>
+          </div>` : ''}
         </div>
       </div>
     `;
@@ -535,6 +553,13 @@ function calculateDistanceMeters(lat1, lon1, lat2, lon2) {
 // CHẾ ĐỘ GIẢ LẬP: CLICK THÊM CA BỆNH VÀ KIỂM TRA Ổ DỊCH (SIMULATION MODE)
 // ============================================================================
 function toggleSimulationMode() {
+  // Yêu cầu đăng nhập tài khoản y tế mới được dùng tính năng Giả lập ca bệnh
+  if (!window.authService || !window.authService.isAuthenticated()) {
+    alert("Tính năng Giả lập ca bệnh yêu cầu đăng nhập tài khoản y tế để xác thực danh tính. Vui lòng đăng nhập!");
+    if (typeof openLoginModal === "function") openLoginModal();
+    return;
+  }
+
   state.isSimulating = !state.isSimulating;
   const btn = document.getElementById("btn-toggle-sim");
   const banner = document.getElementById("sim-banner");
@@ -699,7 +724,15 @@ function applyFilters() {
   const status = state.activeStatus;
   const month = state.activeMonth;
 
+  // PHÂN QUYỀN ĐỊA BÀN THEO TÀI KHOẢN (RBAC SCOPING)
+  const userScopeWard = window.authService ? window.authService.getUserScopeWard() : null;
+
   state.filteredCases = state.rawCases.filter(c => {
+    // 0. Phân quyền Trạm Y tế: Nếu là Trạm Y tế, CHỈ XEM ca thuộc địa bàn mình quản lý
+    if (userScopeWard && userScopeWard !== "ALL") {
+      if (c.w !== userScopeWard) return false;
+    }
+
     // 1. Lọc theo bệnh
     if (disease !== "ALL" && c.grp !== disease) return false;
     
@@ -709,8 +742,10 @@ function applyFilters() {
       if (diagType === "SUSPECT" && !c.type.includes("Nghi ngờ")) return false;
     }
 
-    // 3. Lọc theo xã/phường
-    if (ward !== "ALL" && c.w !== ward) return false;
+    // 3. Lọc theo xã/phường (Đối với Admin hoặc Khách)
+    if (userScopeWard === "ALL" || userScopeWard === null) {
+      if (ward !== "ALL" && c.w !== ward) return false;
+    }
 
     // 4. Lọc theo tình trạng
     if (status !== "ALL") {
@@ -1025,11 +1060,20 @@ function initUIEvents() {
     }
   });
 
-  // Upload Modal Open/Close
+  // Upload Modal Open/Close (Chỉ Admin CDC mới được nạp Excel)
   const uploadBtn = document.getElementById("btn-open-upload");
   const uploadModal = document.getElementById("modal-upload");
   if (uploadBtn && uploadModal) {
-    uploadBtn.addEventListener("click", () => uploadModal.classList.add("active"));
+    uploadBtn.addEventListener("click", () => {
+      if (!window.authService || !window.authService.isAdmin()) {
+        alert("Chỉ Quản trị viên (Admin CDC) mới có quyền nạp và cập nhật dữ liệu Excel dịch bệnh!");
+        if (!window.authService || !window.authService.isAuthenticated()) {
+          openLoginModal();
+        }
+        return;
+      }
+      uploadModal.classList.add("active");
+    });
     document.getElementById("btn-close-upload").addEventListener("click", () => uploadModal.classList.remove("active"));
   }
 
@@ -1041,18 +1085,32 @@ function populateWardDropdown() {
   const select = document.getElementById("filter-ward");
   if (!select) return;
 
+  const userScopeWard = window.authService ? window.authService.getUserScopeWard() : null;
+
   const wardCounts = {};
   state.rawCases.forEach(c => {
     if (c.w) wardCounts[c.w] = (wardCounts[c.w] || 0) + 1;
   });
 
   const sortedWards = Object.entries(wardCounts).sort((a, b) => b[1] - a[1]);
-  
-  select.innerHTML = '<option value="ALL">Tất cả Xã/Phường</option>';
+
+  // Nếu là Trạm Y tế, cố định và khóa dropdown ở địa bàn của trạm
+  if (userScopeWard && userScopeWard !== "ALL") {
+    select.disabled = true;
+    const count = wardCounts[userScopeWard] || 0;
+    select.innerHTML = `<option value="${userScopeWard}">📍 [Địa bàn trạm] ${userScopeWard} (${count.toLocaleString('vi-VN')} ca)</option>`;
+    state.activeWard = userScopeWard;
+    return;
+  }
+
+  // Admin hoặc Khách: Cho phép chọn tất cả
+  select.disabled = false;
+  select.innerHTML = '<option value="ALL">Tất cả Xã/Phường (Toàn thành phố)</option>';
   sortedWards.forEach(([w, count]) => {
     const opt = document.createElement("option");
     opt.value = w;
     opt.innerText = `${w} (${count.toLocaleString('vi-VN')} ca)`;
+    if (state.activeWard === w) opt.selected = true;
     select.appendChild(opt);
   });
 }
@@ -1122,3 +1180,361 @@ function processUploadedExcel(file) {
 function printReport() {
   window.print();
 }
+
+
+// ============================================================================
+// HỆ THỐNG XÁC THỰC, PHÂN QUYỀN & QUẢN TRỊ TÀI KHOẢN TRẠM Y TẾ (RBAC ENGINE)
+// ============================================================================
+
+function initAuthSystem() {
+  // 1. Cập nhật giao diện ban đầu theo phiên đăng nhập hiện tại
+  updateAuthUI();
+
+  // 2. Lắng nghe sự kiện thay đổi đăng nhập/đăng xuất
+  window.addEventListener("auth:change", (e) => {
+    const user = e.detail.user;
+    updateAuthUI();
+    populateWardDropdown();
+    flyToUserArea(user);
+    applyFilters();
+  });
+
+  // 3. Sự kiện nút bấm trên Header
+  const btnOpenLogin = document.getElementById("btn-open-login");
+  if (btnOpenLogin) btnOpenLogin.addEventListener("click", openLoginModal);
+
+  const btnCloseLogin = document.getElementById("btn-close-login");
+  if (btnCloseLogin) btnCloseLogin.addEventListener("click", closeLoginModal);
+
+  const btnLogout = document.getElementById("btn-logout");
+  if (btnLogout) btnLogout.addEventListener("click", () => {
+    if (confirm("Bạn có chắc chắn muốn đăng xuất khỏi hệ thống dịch tễ?")) {
+      window.authService.logout();
+    }
+  });
+
+  const btnOpenUsers = document.getElementById("btn-open-manage-users");
+  if (btnOpenUsers) btnOpenUsers.addEventListener("click", openUsersModal);
+
+  const btnCloseUsers = document.getElementById("btn-close-users");
+  if (btnCloseUsers) btnCloseUsers.addEventListener("click", closeUsersModal);
+
+  // Đóng modal khi click ra ngoài backdrop
+  const modalLogin = document.getElementById("modal-login");
+  if (modalLogin) {
+    modalLogin.addEventListener("click", (e) => {
+      if (e.target === modalLogin) closeLoginModal();
+    });
+  }
+
+  const modalUsers = document.getElementById("modal-users");
+  if (modalUsers) {
+    modalUsers.addEventListener("click", (e) => {
+      if (e.target === modalUsers) closeUsersModal();
+    });
+  }
+}
+
+function updateAuthUI() {
+  const user = window.authService ? window.authService.getCurrentUser() : null;
+  const btnLogin = document.getElementById("btn-open-login");
+  const profileBox = document.getElementById("user-profile-box");
+  const btnManage = document.getElementById("btn-open-manage-users");
+  const btnLogout = document.getElementById("btn-logout");
+
+  const scopeBanner = document.getElementById("scope-banner");
+  const scopeIcon = document.getElementById("scope-icon");
+  const scopeTitle = document.getElementById("scope-title");
+  const scopeDesc = document.getElementById("scope-desc");
+
+  if (user) {
+    // Đã đăng nhập
+    if (btnLogin) btnLogin.style.display = "none";
+    if (profileBox) profileBox.style.display = "flex";
+    if (btnLogout) btnLogout.style.display = "flex";
+
+    const nameEl = document.getElementById("user-display-name");
+    if (nameEl) nameEl.innerText = user.name;
+
+    const roleBadge = document.getElementById("user-display-role");
+    const avatarBadge = document.getElementById("user-avatar-badge");
+
+    if (user.role === "ADMIN") {
+      if (roleBadge) {
+        roleBadge.innerText = "ADMIN (TOÀN TP)";
+        roleBadge.className = "user-role-badge role-admin";
+      }
+      if (avatarBadge) {
+        avatarBadge.className = "user-avatar avatar-admin";
+        avatarBadge.innerHTML = `<i class="fa-solid fa-user-shield"></i>`;
+      }
+      if (btnManage) btnManage.style.display = "flex";
+
+      if (scopeBanner) {
+        scopeBanner.className = "scope-alert-card scope-admin";
+        if (scopeIcon) scopeIcon.className = "fa-solid fa-shield-halved";
+        if (scopeTitle) scopeTitle.innerText = "CHẾ ĐỘ QUẢN TRỊ VIÊN CDC (TOÀN THÀNH PHỐ)";
+        if (scopeDesc) scopeDesc.innerText = "Toàn quyền truy cập cả thành phố: Xem chi tiết toàn bộ ca bệnh, quản lý trạm y tế, dập dịch.";
+      }
+    } else {
+      // Trạm Y tế
+      if (roleBadge) {
+        roleBadge.innerText = `TRẠM Y TẾ: ${user.ward}`;
+        roleBadge.className = "user-role-badge role-tyt";
+      }
+      if (avatarBadge) {
+        avatarBadge.className = "user-avatar avatar-tyt";
+        avatarBadge.innerHTML = `<i class="fa-solid fa-house-medical"></i>`;
+      }
+      if (btnManage) btnManage.style.display = "none";
+
+      if (scopeBanner) {
+        scopeBanner.className = "scope-alert-card scope-tyt";
+        if (scopeIcon) scopeIcon.className = "fa-solid fa-house-medical-flag";
+        if (scopeTitle) scopeTitle.innerText = `ĐỊA BÀN QUẢN LÝ: ${user.ward.toUpperCase()}`;
+        if (scopeDesc) scopeDesc.innerText = `Hệ thống tự động giới hạn chỉ hiển thị các ca bệnh thuộc địa bàn ${user.ward} để điều tra dịch tễ.`;
+      }
+    }
+  } else {
+    // Chưa đăng nhập (Chế độ Khách)
+    if (btnLogin) btnLogin.style.display = "flex";
+    if (profileBox) profileBox.style.display = "none";
+    if (btnManage) btnManage.style.display = "none";
+    if (btnLogout) btnLogout.style.display = "none";
+
+    if (scopeBanner) {
+      scopeBanner.className = "scope-alert-card scope-guest";
+      if (scopeIcon) scopeIcon.className = "fa-solid fa-lock";
+      if (scopeTitle) scopeTitle.innerText = "CHẾ ĐỘ KHÁCH (CHƯA ĐĂNG NHẬP)";
+      if (scopeDesc) scopeDesc.innerText = "Thông tin chi tiết địa chỉ & đơn vị tiếp nhận bị ẩn danh. Đăng nhập để mở khóa đầy đủ.";
+    }
+  }
+}
+
+function flyToUserArea(user) {
+  if (!map) return;
+  if (!user || user.role === "ADMIN") {
+    // Admin hoặc Khách: zoom toàn cảnh Đà Nẵng
+    map.flyTo([16.0544, 108.2022], 12, { duration: 1.2 });
+    return;
+  }
+
+  // Nếu là Trạm Y tế: tìm tọa độ các ca bệnh của phường đó để tính tâm
+  const wardCases = state.rawCases.filter(c => c.w === user.ward);
+  if (wardCases.length > 0) {
+    let sumLat = 0, sumLng = 0;
+    const sample = wardCases.slice(0, 30);
+    sample.forEach(c => {
+      sumLat += c.lat;
+      sumLng += c.lng;
+    });
+    const avgLat = sumLat / sample.length;
+    const avgLng = sumLng / sample.length;
+    map.flyTo([avgLat, avgLng], 14, { duration: 1.5 });
+  } else {
+    map.flyTo([16.0544, 108.2022], 13, { duration: 1.2 });
+  }
+}
+
+// MODAL LOGIN
+window.openLoginModal = function() {
+  const modal = document.getElementById("modal-login");
+  const err = document.getElementById("login-error-msg");
+  if (err) err.style.display = "none";
+  if (modal) modal.classList.add("active");
+
+  const boxNormal = document.getElementById("box-login-normal");
+  const boxFirstRun = document.getElementById("box-first-run-setup");
+  const modalTitle = document.getElementById("login-modal-title");
+
+  // Kiểm tra lần đầu chạy chưa có Admin
+  const isFirst = window.authService ? window.authService.isFirstRun() : false;
+  if (isFirst) {
+    if (boxNormal) boxNormal.style.display = "none";
+    if (boxFirstRun) boxFirstRun.style.display = "block";
+    if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-key" style="color:var(--accent-cyan);"></i> Khởi Tạo Quản Trị Viên (Lần đầu)`;
+    const setupUser = document.getElementById("setup-username");
+    if (setupUser) setupUser.focus();
+  } else {
+    if (boxNormal) boxNormal.style.display = "block";
+    if (boxFirstRun) boxFirstRun.style.display = "none";
+    if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-shield-halved" style="color:var(--accent-cyan);"></i> Đăng Nhập Hệ Thống Dịch Tễ`;
+    const userInput = document.getElementById("login-username");
+    if (userInput) userInput.focus();
+  }
+};
+
+window.closeLoginModal = function() {
+  const modal = document.getElementById("modal-login");
+  if (modal) modal.classList.remove("active");
+};
+
+// Xử lý khởi tạo Quản trị viên lần đầu
+window.handleFirstRunSetup = async function() {
+  const userEl = document.getElementById("setup-username");
+  const nameEl = document.getElementById("setup-fullname");
+  const passEl = document.getElementById("setup-password");
+  const passConfirmEl = document.getElementById("setup-password-confirm");
+  const errBox = document.getElementById("login-error-msg");
+
+  const username = userEl ? userEl.value.trim() : "";
+  const name = nameEl ? nameEl.value.trim() : "";
+  const password = passEl ? passEl.value : "";
+  const passwordConfirm = passConfirmEl ? passConfirmEl.value : "";
+
+  if (password !== passwordConfirm) {
+    if (errBox) {
+      errBox.innerText = "Xác nhận mật khẩu không khớp. Vui lòng kiểm tra lại!";
+      errBox.style.display = "block";
+    }
+    return;
+  }
+
+  if (password.length < 6) {
+    if (errBox) {
+      errBox.innerText = "Mật khẩu quản trị phải có ít nhất 6 ký tự để đảm bảo an toàn!";
+      errBox.style.display = "block";
+    }
+    return;
+  }
+
+  const res = await window.authService.setupInitialAdmin(username, password, name);
+  if (res.success) {
+    alert("Khởi tạo tài khoản Quản trị viên thành công! Bạn đã được đăng nhập tự động.");
+    closeLoginModal();
+  } else {
+    if (errBox) {
+      errBox.innerText = res.message;
+      errBox.style.display = "block";
+    }
+  }
+};
+
+window.handleLoginSubmit = async function() {
+  const userInput = document.getElementById("login-username");
+  const passInput = document.getElementById("login-password");
+  const errBox = document.getElementById("login-error-msg");
+
+  const username = userInput ? userInput.value : "";
+  const password = passInput ? passInput.value : "";
+
+  const res = await window.authService.login(username, password);
+  if (res.success) {
+    closeLoginModal();
+    if (userInput) userInput.value = "";
+    if (passInput) passInput.value = "";
+  } else {
+    if (errBox) {
+      errBox.innerText = res.message;
+      errBox.style.display = "block";
+    }
+  }
+};
+
+// MODAL QUẢN LÝ TÀI KHOẢN TRẠM Y TẾ (ADMIN ONLY)
+window.openUsersModal = function() {
+  if (!window.authService || !window.authService.isAdmin()) {
+    alert("Chỉ Quản trị viên (Admin CDC) mới có quyền quản lý tài khoản!");
+    return;
+  }
+
+  const modal = document.getElementById("modal-users");
+  if (modal) modal.classList.add("active");
+
+  renderUsersTable();
+  populateNewWardOptions();
+};
+
+window.closeUsersModal = function() {
+  const modal = document.getElementById("modal-users");
+  if (modal) modal.classList.remove("active");
+};
+
+function renderUsersTable() {
+  const tbody = document.getElementById("user-table-body");
+  const countBadge = document.getElementById("user-count-badge");
+  if (!tbody) return;
+
+  const users = window.authService.getUsers();
+  if (countBadge) countBadge.innerText = `${users.length} tài khoản`;
+
+  tbody.innerHTML = "";
+  users.forEach(u => {
+    const tr = document.createElement("tr");
+    const isRootAdmin = u.username.toLowerCase() === "admin";
+    const roleLabel = u.role === "ADMIN" 
+      ? '<span class="user-role-badge role-admin">ADMIN</span>' 
+      : '<span class="user-role-badge role-tyt">TRẠM Y TẾ</span>';
+
+    tr.innerHTML = `
+      <td><b>${u.username}</b></td>
+      <td>${u.name}</td>
+      <td>${roleLabel}</td>
+      <td><span style="color:var(--accent-cyan); font-weight:500;">${u.ward === "ALL" ? "Toàn thành phố" : u.ward}</span></td>
+      <td style="text-align:center;">
+        ${isRootAdmin 
+          ? '<span style="color:var(--text-dim); font-size:0.65rem;">Cố định</span>' 
+          : `<button type="button" class="btn-action-del" onclick="handleDeleteUser('${u.username}')" title="Xóa tài khoản"><i class="fa-solid fa-trash"></i></button>`}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function populateNewWardOptions() {
+  const select = document.getElementById("new-ward");
+  if (!select) return;
+
+  // Lấy danh sách xã phường độc nhất từ dữ liệu
+  const wardSet = new Set();
+  state.rawCases.forEach(c => {
+    if (c.w) wardSet.add(c.w);
+  });
+  const sorted = Array.from(wardSet).sort();
+
+  select.innerHTML = '<option value="">-- Chọn Xã / Phường quản lý --</option>';
+  sorted.forEach(w => {
+    const opt = document.createElement("option");
+    opt.value = w;
+    opt.innerText = w;
+    select.appendChild(opt);
+  });
+}
+
+window.handleCreateUserSubmit = async function() {
+  const username = document.getElementById("new-username").value;
+  const password = document.getElementById("new-password").value;
+  const name = document.getElementById("new-fullname").value;
+  const ward = document.getElementById("new-ward").value;
+  const msgBox = document.getElementById("user-mgmt-msg");
+
+  const res = await window.authService.createTYTAccount({ username, password, name, ward });
+
+  if (msgBox) {
+    msgBox.innerText = res.message;
+    msgBox.style.display = "block";
+    msgBox.style.background = res.success ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)";
+    msgBox.style.color = res.success ? "#6ee7b7" : "#fca5a5";
+    msgBox.style.border = res.success ? "1px solid #10b981" : "1px solid #ef4444";
+  }
+
+  if (res.success) {
+    document.getElementById("form-create-user").reset();
+    renderUsersTable();
+  }
+};
+
+window.handleDeleteUser = function(username) {
+  if (confirm(`Bạn có chắc chắn muốn xóa tài khoản Trạm Y tế "${username}"?`)) {
+    const res = window.authService.deleteUser(username);
+    const msgBox = document.getElementById("user-mgmt-msg");
+    if (msgBox) {
+      msgBox.innerText = res.message;
+      msgBox.style.display = "block";
+      msgBox.style.background = res.success ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)";
+      msgBox.style.color = res.success ? "#6ee7b7" : "#fca5a5";
+      msgBox.style.border = res.success ? "1px solid #10b981" : "1px solid #ef4444";
+    }
+    renderUsersTable();
+  }
+};

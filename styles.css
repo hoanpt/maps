@@ -1493,8 +1493,46 @@ body {
 
 .chart-container-districts {
   position: relative;
-  height: 310px;
+  min-height: 480px;
+  height: 480px;
   width: 100%;
+}
+
+/* DISTRICT FILTER TABS */
+.district-filter-tabs {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.d-tab-btn {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #94a3b8;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+}
+
+.d-tab-btn:hover {
+  background: rgba(30, 41, 59, 0.85);
+  color: #f8fafc;
+  border-color: rgba(56, 189, 248, 0.5);
+}
+
+.d-tab-btn.active {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.25), rgba(56, 189, 248, 0.12));
+  border-color: var(--accent-cyan);
+  color: #38bdf8;
+  font-weight: 600;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
 }
 
 /* DISTRICT RISK TILES */
@@ -1502,6 +1540,14 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.55rem;
+}
+
+.risk-district-grid::-webkit-scrollbar {
+  width: 5px;
+}
+.risk-district-grid::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.3);
+  border-radius: 4px;
 }
 
 .district-risk-card {

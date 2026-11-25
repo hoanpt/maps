@@ -30,7 +30,9 @@ const state = {
     trend: null,
     disease: null,
     districts: null
-  }
+  },
+  guestDistrictFilter: "all",
+  guestRegionStats: []
 };
 window.state = state;
 
@@ -1084,13 +1086,13 @@ function initGuestCharts() {
     });
   }
 
-  // Chart 3: So sánh ca bệnh 7 Quận/Huyện (Horizontal Stacked Bar Chart)
+  // Chart 3: So sánh ca bệnh theo Địa bàn (Horizontal Stacked Bar Chart)
   const ctxGuestDistricts = document.getElementById("guest-chart-districts");
   if (ctxGuestDistricts) {
     state.guestCharts.districts = new Chart(ctxGuestDistricts, {
       type: "bar",
       data: {
-        labels: ["Liên Chiểu", "Thanh Khê", "Cẩm Lệ", "Sơn Trà", "Ngũ Hành Sơn", "Hải Châu", "Hòa Vang"],
+        labels: [],
         datasets: [
           {
             label: "Sốt xuất huyết Dengue",
@@ -1145,7 +1147,7 @@ function initGuestCharts() {
           },
           y: {
             stacked: true,
-            ticks: { color: "#f8fafc", font: { size: 11, weight: "600" } },
+            ticks: { color: "#f8fafc", font: { size: 10, weight: "500" } },
             grid: { display: false }
           }
         }
@@ -1239,61 +1241,145 @@ function updateGuestDashboard() {
     state.guestCharts.disease.update();
   }
 
-  // 3. Cập nhật Biểu đồ So sánh 7 Quận/Huyện (Horizontal Stacked Bar)
-  const dKeywords = [
-    { name: "Liên Chiểu", kw: ["liên chiểu", "hòa khánh", "hòa minh", "hải vân", "hòa hiệp"] },
-    { name: "Thanh Khê", kw: ["thanh khê", "an khê", "tam thuận", "xuân hà", "tân chính", "chính gián", "vĩnh trung", "thạc gián"] },
-    { name: "Cẩm Lệ", kw: ["cẩm lệ", "hòa xuân", "khuê trung", "hòa thọ", "hòa phát", "hòa an"] },
-    { name: "Sơn Trà", kw: ["sơn trà", "an hải", "phước mỹ", "nại hiên đông", "thọ quang", "mân thái"] },
-    { name: "Ngũ Hành Sơn", kw: ["ngũ hành sơn", "hòa hải", "hòa quý", "khuê mỹ", "mỹ an"] },
-    { name: "Hải Châu", kw: ["hải châu", "hòa cường", "thạch thang", "thuận phước", "thanh bình", "bình hiên", "bình thuận", "nam dương", "phước ninh"] },
-    { name: "Hòa Vang", kw: ["hòa vang", "hòa tiến", "bà nà", "hòa châu", "hòa phước", "hòa khương", "hòa nhơn", "hòa phong", "hòa sơn", "hòa ninh", "hòa liên", "hòa bắc", "hòa phú"] }
-  ];
-
-  const dStats = dKeywords.map(d => ({ name: d.name, sxh: 0, tcm: 0, cum: 0, other: 0 }));
-
-  cases.forEach(c => {
-    const w = (c.w || "").toLowerCase();
-    for (let i = 0; i < dKeywords.length; i++) {
-      if (dKeywords[i].kw.some(k => w.includes(k))) {
-        if (c.grp === "SXH") dStats[i].sxh++;
-        else if (c.grp === "TCM") dStats[i].tcm++;
-        else if (c.grp === "CUM") dStats[i].cum++;
-        else dStats[i].other++;
-        break;
-      }
-    }
-  });
-
-  if (state.guestCharts && state.guestCharts.districts) {
-    state.guestCharts.districts.data.datasets[0].data = dStats.map(d => d.sxh);
-    state.guestCharts.districts.data.datasets[1].data = dStats.map(d => d.tcm);
-    state.guestCharts.districts.data.datasets[2].data = dStats.map(d => d.cum);
-    state.guestCharts.districts.data.datasets[3].data = dStats.map(d => d.other);
-    state.guestCharts.districts.update("none");
-  }
-
-  // 4. Cập nhật Bảng Thống kê Quận/Huyện của Đà Nẵng
-  renderGuestDistrictTable(cases, total);
+  // 3. Cập nhật Biểu đồ & Dữ liệu 15 Khu vực (Đà Nẵng & Vùng Mở rộng)
+  updateGuestDistrictsAnalysis(cases, total);
 }
 
-function renderGuestDistrictTable(cases, total) {
-  const tbody = document.getElementById("guest-districts-table-body");
-  if (!tbody) return;
+// ============================================================================
+// DANH MỤC 15 KHU VỰC ĐỊA BÀN TOÀN THÀNH PHỐ & VÙNG MỞ RỘNG (94 TRẠM Y TẾ)
+// ============================================================================
+const EPIDEMIOLOGY_REGIONS = [
+  {
+    id: "lienchieu",
+    name: "Quận Liên Chiểu",
+    shortName: "Liên Chiểu",
+    type: "central",
+    badgeText: "Trung tâm TP",
+    kw: ["liên chiểu", "hòa khánh", "hòa minh", "hải vân", "hòa hiệp"]
+  },
+  {
+    id: "thanhkhe",
+    name: "Quận Thanh Khê",
+    shortName: "Thanh Khê",
+    type: "central",
+    badgeText: "Trung tâm TP",
+    kw: ["thanh khê", "an khê", "tam thuận", "xuân hà", "tân chính", "chính gián", "vĩnh trung", "thạc gián"]
+  },
+  {
+    id: "dienban",
+    name: "Thị xã Điện Bàn",
+    shortName: "TX. Điện Bàn",
+    type: "expanded",
+    badgeText: "Mở rộng - Sáp nhập",
+    kw: ["điện bàn", "gò nổi", "vĩnh điện", "điện ngọc", "điện nam", "điện dương", "điện tiến", "điện hồng", "điện thọ", "điện phước", "điện an", "điện trung", "điện quang", "điện phong", "điện minh", "điện phương"]
+  },
+  {
+    id: "duyxuyen",
+    name: "Huyện Duy Xuyên",
+    shortName: "H. Duy Xuyên",
+    type: "expanded",
+    badgeText: "Mở rộng - Sáp nhập",
+    kw: ["duy xuyên", "nam phước", "duy nghĩa", "thu bồn", "xuân phú", "duy hải", "duy vinh", "duy phước", "duy thành", "duy trung", "duy sơn", "duy trinh", "duy châu", "duy hòa", "duy tân", "duy phú"]
+  },
+  {
+    id: "thangbinh",
+    name: "Huyện Thăng Bình",
+    shortName: "H. Thăng Bình",
+    type: "expanded",
+    badgeText: "Mở rộng - Sáp nhập",
+    kw: ["thăng bình", "thăng an", "thăng điền", "thăng trường", "thăng phú", "an thắng", "đồng dương", "thạnh bình", "hà lam", "bình minh", "bình đào", "bình triều", "bình giang", "bình phục", "bình nguyên", "bình tú", "bình sa", "bình hải", "bình quế", "bình phú", "bình định", "bình quý", "bình chánh", "bình trung", "bình an", "bình nam"]
+  },
+  {
+    id: "tamky_nuithanh",
+    name: "TP. Tam Kỳ & Núi Thành",
+    shortName: "Tam Kỳ - Núi Thành",
+    type: "expanded",
+    badgeText: "Mở rộng - Sáp nhập",
+    kw: ["tam kỳ", "hương trà", "bàn thạch", "chiên đàn", "an mỹ", "an xuân", "an sơn", "hòa hương", "phước hòa", "an phú", "trường xuân", "tân thạnh", "núi thành", "tam xuân", "tam anh", "tam mỹ", "tam hải", "tam quang", "tam nghĩa", "tam hiệp", "tam giang", "tam hòa", "tam tiến", "tây hồ", "quảng phú", "phú ninh"]
+  },
+  {
+    id: "camle",
+    name: "Quận Cẩm Lệ",
+    shortName: "Cẩm Lệ",
+    type: "central",
+    badgeText: "Trung tâm TP",
+    kw: ["cẩm lệ", "hòa xuân", "khuê trung", "hòa thọ", "hòa phát", "hòa an"]
+  },
+  {
+    id: "sontra",
+    name: "Quận Sơn Trà",
+    shortName: "Sơn Trà",
+    type: "central",
+    badgeText: "Trung tâm TP",
+    kw: ["sơn trà", "an hải", "phước mỹ", "nại hiên đông", "thọ quang", "mân thái"]
+  },
+  {
+    id: "hoian",
+    name: "TP. Hội An",
+    shortName: "TP. Hội An",
+    type: "expanded",
+    badgeText: "Mở rộng - Sáp nhập",
+    kw: ["hội an", "minh an", "cẩm phô", "sơn phong", "thanh hà", "cẩm châu", "cẩm an", "cửa đại", "cẩm hà", "cẩm thanh", "cẩm kim", "tân hiệp", "cù lao chàm"]
+  },
+  {
+    id: "nguhanhson",
+    name: "Quận Ngũ Hành Sơn",
+    shortName: "Ngũ Hành Sơn",
+    type: "central",
+    badgeText: "Trung tâm TP",
+    kw: ["ngũ hành sơn", "hòa hải", "hòa quý", "khuê mỹ", "mỹ an"]
+  },
+  {
+    id: "haichau",
+    name: "Quận Hải Châu",
+    shortName: "Hải Châu",
+    type: "central",
+    badgeText: "Trung tâm TP",
+    kw: ["hải châu", "hòa cường", "thạch thang", "thuận phước", "thanh bình", "bình hiên", "bình thuận", "nam dương", "phước ninh"]
+  },
+  {
+    id: "hoavang",
+    name: "Huyện Hòa Vang",
+    shortName: "Hòa Vang",
+    type: "central",
+    badgeText: "Trung tâm TP",
+    kw: ["hòa vang", "hòa tiến", "bà nà", "hòa châu", "hòa phước", "hòa khương", "hòa nhơn", "hòa phong", "hòa sơn", "hòa ninh", "hòa liên", "hòa bắc", "hòa phú"]
+  },
+  {
+    id: "queson",
+    name: "Huyện Quế Sơn & Nông Sơn",
+    shortName: "Quế Sơn - Nông Sơn",
+    type: "expanded",
+    badgeText: "Mở rộng - Sáp nhập",
+    kw: ["quế sơn", "quế phước", "nông sơn", "đông phú", "hương an", "quế xuân", "quế phú", "quế hiệp", "quế thuận", "quế mỹ", "quế châu", "quế phong", "quế long", "quế lộc", "quế trung", "ninh phước", "phước ninh"]
+  },
+  {
+    id: "dailoc",
+    name: "Huyện Đại Lộc",
+    shortName: "H. Đại Lộc",
+    type: "expanded",
+    badgeText: "Mở rộng - Sáp nhập",
+    kw: ["đại lộc", "vu gia", "hà nha", "thượng đức", "ái nghĩa", "đại hiệp", "đại nghĩa", "đại an", "đại hòa", "đại phước", "đại quang", "đại đồng", "đại hồng", "đại phong", "đại tân", "đại thắng", "đại chánh", "đại thạnh", "đại cường", "đại minh", "đại lãnh", "đại hưng", "đại sơn"]
+  },
+  {
+    id: "other_expanded",
+    name: "Địa Bàn Miền Núi & Lân Cận",
+    shortName: "Miền núi & Khác",
+    type: "expanded",
+    badgeText: "Mở rộng - Sáp nhập",
+    kw: ["tiên phước", "thạnh mỹ", "nam giang", "đông giang", "tây giang", "phước sơn", "hiệp đức", "bắc trà my", "nam trà my", "trà my", "khâm đức", "la dêê", "hoàng sa", "bình chương", "bình sơn", "lãnh ngọc", "phú thuận", "sơn cẩm hà", "bến giằng", "vạn tường", "việt an", "trà đốc", "trà leng"]
+  }
+];
+window.EPIDEMIOLOGY_REGIONS = EPIDEMIOLOGY_REGIONS;
 
-  const districtKeywords = [
-    { name: "Quận Hải Châu", kw: ["hải châu", "hòa cường", "thạch thang", "thuận phước", "thanh bình", "bình hiên", "bình thuận", "nam dương", "phước ninh"] },
-    { name: "Quận Thanh Khê", kw: ["thanh khê", "an khê", "tam thuận", "xuân hà", "tân chính", "chính gián", "vĩnh trung", "thạc gián"] },
-    { name: "Quận Sơn Trà", kw: ["sơn trà", "an hải", "phước mỹ", "nại hiên đông", "thọ quang", "mân thái"] },
-    { name: "Quận Ngũ Hành Sơn", kw: ["ngũ hành sơn", "hòa hải", "hòa quý", "khuê mỹ", "mỹ an"] },
-    { name: "Quận Liên Chiểu", kw: ["liên chiểu", "hòa khánh", "hòa minh", "hải vân", "hòa hiệp"] },
-    { name: "Quận Cẩm Lệ", kw: ["cẩm lệ", "hòa xuân", "khuê trung", "hòa thọ", "hòa phát", "hòa an"] },
-    { name: "Huyện Hòa Vang", kw: ["hòa vang", "hòa tiến", "bà nà", "hòa châu", "hòa phước", "hòa khương", "hòa nhơn", "hòa phong", "hòa sơn", "hòa ninh", "hòa liên", "hòa bắc", "hòa phú"] },
-    { name: "Giáp ranh & Khác (Tiếp nhận tại ĐN)", kw: [] }
-  ];
-
-  const stats = districtKeywords.map(d => ({
-    name: d.name,
+function updateGuestDistrictsAnalysis(cases, total) {
+  const stats = EPIDEMIOLOGY_REGIONS.map(r => ({
+    id: r.id,
+    name: r.name,
+    shortName: r.shortName,
+    type: r.type,
+    badgeText: r.badgeText,
+    kw: r.kw,
     sxh: 0,
     tcm: 0,
     cum: 0,
@@ -1301,39 +1387,174 @@ function renderGuestDistrictTable(cases, total) {
     total: 0
   }));
 
+  const otherRegionIndex = stats.length - 1;
+
   cases.forEach(c => {
     const w = (c.w || "").toLowerCase();
-    let matchedIndex = -1;
-    for (let i = 0; i < districtKeywords.length - 1; i++) {
-      if (districtKeywords[i].kw.some(k => w.includes(k))) {
-        matchedIndex = i;
+    let matched = false;
+    for (let i = 0; i < stats.length - 1; i++) {
+      if (stats[i].kw.some(k => w.includes(k))) {
+        stats[i].total++;
+        if (c.grp === "SXH") stats[i].sxh++;
+        else if (c.grp === "TCM") stats[i].tcm++;
+        else if (c.grp === "CUM") stats[i].cum++;
+        else stats[i].other++;
+        matched = true;
         break;
       }
     }
-    if (matchedIndex === -1) {
-      matchedIndex = districtKeywords.length - 1; // Khác
+    if (!matched) {
+      stats[otherRegionIndex].total++;
+      if (c.grp === "SXH") stats[otherRegionIndex].sxh++;
+      else if (c.grp === "TCM") stats[otherRegionIndex].tcm++;
+      else if (c.grp === "CUM") stats[otherRegionIndex].cum++;
+      else stats[otherRegionIndex].other++;
     }
-
-    stats[matchedIndex].total++;
-    if (c.grp === "SXH") stats[matchedIndex].sxh++;
-    else if (c.grp === "TCM") stats[matchedIndex].tcm++;
-    else if (c.grp === "CUM") stats[matchedIndex].cum++;
-    else stats[matchedIndex].other++;
   });
+
+  state.guestRegionStats = stats;
+  state.guestTotalCases = total;
+  renderGuestDistrictsView();
+}
+
+window.setGuestDistrictFilter = function(filterType) {
+  state.guestDistrictFilter = filterType || "all";
+  ["all", "central", "expanded"].forEach(t => {
+    const btn = document.getElementById("btn-dtab-" + t);
+    if (btn) {
+      if (t === state.guestDistrictFilter) btn.classList.add("active");
+      else btn.classList.remove("active");
+    }
+  });
+  renderGuestDistrictsView();
+};
+
+function renderGuestDistrictsView() {
+  if (!state.guestRegionStats || state.guestRegionStats.length === 0) return;
+  const filter = state.guestDistrictFilter || "all";
+  const total = state.guestTotalCases || state.rawCases.length;
+
+  let filtered = state.guestRegionStats.slice();
+  if (filter === "central") {
+    filtered = filtered.filter(r => r.type === "central");
+  } else if (filter === "expanded") {
+    filtered = filtered.filter(r => r.type === "expanded");
+  }
+
+  // Sắp xếp giảm dần theo tổng ca bệnh
+  filtered.sort((a, b) => b.total - a.total);
+
+  // 1. Cập nhật Biểu đồ Thanh ngang Xếp chồng
+  if (state.guestCharts && state.guestCharts.districts) {
+    state.guestCharts.districts.data.labels = filtered.map(d => d.shortName);
+    state.guestCharts.districts.data.datasets[0].data = filtered.map(d => d.sxh);
+    state.guestCharts.districts.data.datasets[1].data = filtered.map(d => d.tcm);
+    state.guestCharts.districts.data.datasets[2].data = filtered.map(d => d.cum);
+    state.guestCharts.districts.data.datasets[3].data = filtered.map(d => d.other);
+    state.guestCharts.districts.update("none");
+  }
+
+  // 2. Cập nhật Thẻ Cảnh báo Nguy cơ (Heatmap Risk Tiles)
+  renderGuestRiskTiles(filtered);
+
+  // 3. Cập nhật Bảng Thống kê Chi tiết
+  renderGuestDistrictTable(filtered, total);
+}
+
+function renderGuestRiskTiles(stats) {
+  const container = document.getElementById("guest-risk-district-grid");
+  if (!container) return;
+
+  const maxCases = stats.length > 0 ? Math.max(...stats.map(s => s.total)) : 1;
 
   let html = "";
   stats.forEach(st => {
+    let riskClass = "risk-safe";
+    let badgeClass = "badge-safe";
+    let badgeText = "Kiểm soát tốt";
+    let barColor = "#10b981";
+
+    if (st.total >= 2000 || st.sxh >= 1200) {
+      riskClass = "risk-high";
+      badgeClass = "badge-high";
+      badgeText = "Nguy cơ rất cao";
+      barColor = "#ef4444";
+    } else if (st.total >= 1500 || st.sxh >= 800) {
+      riskClass = "risk-high";
+      badgeClass = "badge-high";
+      badgeText = "Nguy cơ cao";
+      barColor = "#f97316";
+    } else if (st.total >= 1000 || st.sxh >= 400) {
+      riskClass = "risk-med";
+      badgeClass = "badge-med";
+      badgeText = "Theo dõi chặt";
+      barColor = "#eab308";
+    }
+
+    const pctBar = Math.min(100, Math.max(12, Math.round((st.total / maxCases) * 100)));
+    const typeBadge = st.type === "central" 
+      ? '<span style="font-size:0.65rem; padding:0.1rem 0.35rem; border-radius:4px; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); margin-left:0.35rem;">Trung tâm</span>'
+      : '<span style="font-size:0.65rem; padding:0.1rem 0.35rem; border-radius:4px; background:rgba(168,85,247,0.15); color:#c084fc; border:1px solid rgba(168,85,247,0.3); margin-left:0.35rem;">Mở rộng</span>';
+
+    html += `
+      <div class="district-risk-card ${riskClass}">
+        <div class="d-risk-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:0.25rem;">
+            <span class="d-name" style="font-weight:600; color:#f8fafc; font-size:0.82rem;">${st.name}</span>
+            ${typeBadge}
+          </div>
+          <span class="d-badge ${badgeClass}" style="font-size:0.68rem; padding:0.15rem 0.45rem;">${badgeText}</span>
+        </div>
+        <div class="d-numbers" style="display:flex; justify-content:space-between; font-size:0.75rem; color:#cbd5e1; margin-top:0.15rem;">
+          <div><b style="color:#ffffff; font-size:0.88rem;">${st.total.toLocaleString('vi-VN')}</b> ca bệnh</div>
+          <div class="d-sub" style="color:#94a3b8; font-size:0.7rem;">SXH: <b style="color:#fb923c;">${st.sxh.toLocaleString('vi-VN')}</b> | TCM: <b style="color:#fde047;">${st.tcm.toLocaleString('vi-VN')}</b></div>
+        </div>
+        <div class="d-bar" style="height:5px; background:rgba(30,41,59,0.8); border-radius:3px; overflow:hidden; margin-top:0.2rem;">
+          <div style="width:${pctBar}%; height:100%; background:${barColor}; border-radius:3px;"></div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function renderGuestDistrictTable(stats, total) {
+  const tbody = document.getElementById("guest-districts-table-body");
+  if (!tbody) return;
+
+  let totalSxh = 0;
+  let totalTcm = 0;
+  let totalCum = 0;
+  let totalOther = 0;
+  let totalFiltered = 0;
+
+  let html = "";
+  stats.forEach(st => {
+    totalSxh += st.sxh;
+    totalTcm += st.tcm;
+    totalCum += st.cum;
+    totalOther += st.other;
+    totalFiltered += st.total;
+
     const pct = total > 0 ? ((st.total / total) * 100).toFixed(1) : "0.0";
     let badgeClass = "badge-safe";
     let badgeText = "Kiểm soát tốt";
 
-    if (st.sxh > 800 || st.total > 1500) {
+    if (st.total >= 2000 || st.sxh >= 1200) {
+      badgeClass = "badge-danger";
+      badgeText = "Nguy cơ rất cao";
+    } else if (st.total >= 1500 || st.sxh >= 800) {
       badgeClass = "badge-danger";
       badgeText = "Nguy cơ cao";
-    } else if (st.sxh > 400 || st.total > 800) {
+    } else if (st.total >= 1000 || st.sxh >= 400) {
       badgeClass = "badge-warning";
       badgeText = "Theo dõi chặt";
     }
+
+    const typeBadge = st.type === "central" 
+      ? '<span style="font-size:0.68rem; padding:0.15rem 0.45rem; border-radius:4px; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); white-space:nowrap;"><i class="fa-solid fa-city"></i> Trung tâm TP</span>'
+      : '<span style="font-size:0.68rem; padding:0.15rem 0.45rem; border-radius:4px; background:rgba(168,85,247,0.15); color:#c084fc; border:1px solid rgba(168,85,247,0.3); white-space:nowrap;"><i class="fa-solid fa-map-pin"></i> Mở rộng - Sáp nhập</span>';
 
     html += `
       <tr>
@@ -1341,6 +1562,7 @@ function renderGuestDistrictTable(cases, total) {
           <i class="fa-solid fa-location-dot" style="color:var(--accent-cyan); margin-right:6px;"></i>
           ${st.name}
         </td>
+        <td style="text-align:center;">${typeBadge}</td>
         <td style="text-align:right; color:#f97316; font-weight:600;">${st.sxh.toLocaleString('vi-VN')}</td>
         <td style="text-align:right; color:#eab308; font-weight:600;">${st.tcm.toLocaleString('vi-VN')}</td>
         <td style="text-align:right; color:#06b6d4;">${st.cum.toLocaleString('vi-VN')}</td>
@@ -1349,7 +1571,7 @@ function renderGuestDistrictTable(cases, total) {
         <td style="text-align:center;">
           <div style="display:flex; align-items:center; gap:6px; justify-content:center;">
             <div style="width:70px; height:6px; background:#1e293b; border-radius:3px; overflow:hidden;">
-              <div style="width:${Math.min(parseFloat(pct) * 3, 100)}%; height:100%; background:var(--accent-cyan);"></div>
+              <div style="width:${Math.min(parseFloat(pct) * 5, 100)}%; height:100%; background:var(--accent-cyan);"></div>
             </div>
             <span style="font-size:0.72rem; color:#94a3b8; min-width:32px;">${pct}%</span>
           </div>
@@ -1360,6 +1582,34 @@ function renderGuestDistrictTable(cases, total) {
       </tr>
     `;
   });
+
+  // Hàng tổng kết nếu hiển thị toàn bộ
+  const filter = state.guestDistrictFilter || "all";
+  if (filter === "all") {
+    html += `
+      <tr style="background:rgba(15,23,42,0.9); border-top:2px solid rgba(56,189,248,0.4); font-weight:700;">
+        <td style="color:var(--accent-cyan);">
+          <i class="fa-solid fa-calculator" style="margin-right:6px;"></i> TỔNG CỘNG TOÀN ĐỊA BÀN
+        </td>
+        <td style="text-align:center;">
+          <span style="font-size:0.68rem; padding:0.15rem 0.45rem; border-radius:4px; background:rgba(56,189,248,0.25); color:#7dd3fc; border:1px solid rgba(56,189,248,0.4);">
+            15 Khu vực (94 TYT)
+          </span>
+        </td>
+        <td style="text-align:right; color:#f97316;">${totalSxh.toLocaleString('vi-VN')}</td>
+        <td style="text-align:right; color:#eab308;">${totalTcm.toLocaleString('vi-VN')}</td>
+        <td style="text-align:right; color:#06b6d4;">${totalCum.toLocaleString('vi-VN')}</td>
+        <td style="text-align:right; color:#a855f7;">${totalOther.toLocaleString('vi-VN')}</td>
+        <td style="text-align:right; color:#38bdf8; font-size:0.92rem;">${totalFiltered.toLocaleString('vi-VN')}</td>
+        <td style="text-align:center; color:#38bdf8;">100.0%</td>
+        <td style="text-align:center;">
+          <span class="status-badge badge-warning" style="background:rgba(56,189,248,0.15); color:#38bdf8; border-color:rgba(56,189,248,0.4);">
+            Toàn hệ thống
+          </span>
+        </td>
+      </tr>
+    `;
+  }
 
   tbody.innerHTML = html;
 }

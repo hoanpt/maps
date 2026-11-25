@@ -588,14 +588,14 @@
             <div class="hero-glow-blob"></div>
             <div class="hero-left">
               <div class="hero-badge">
-                <span class="live-dot"></span> BÁO CÁO DỊCH TỄ HỌC TP. ĐÀ NẴNG (GIAI ĐOẠN 2025 - 2026)
+                <span class="live-dot"></span> BÁO CÁO DỊCH TỄ HỌC TP. ĐÀ NẴNG & ĐỊA BÀN MỞ RỘNG (GIAI ĐOẠN 2025 - 2026)
               </div>
               <h2 class="hero-title">
                 TRUNG TÂM GIÁM SÁT & DỰ BÁO DỊCH BỆNH TRUYỀN NHIỄM
               </h2>
               <p class="hero-desc">
                 Hệ thống phân tích dịch tễ học và giám sát ổ dịch thời gian thực của <b>CDC Đà Nẵng</b>. 
-                Số liệu ca bệnh được tổng hợp tự động từ các cơ sở y tế trên toàn địa bàn 7 quận/huyện.
+                Số liệu ca bệnh được tổng hợp tự động từ 94 trạm y tế trên toàn địa bàn thành phố và các khu vực liên kết dịch tễ mở rộng (Điện Bàn, Hội An, Duy Xuyên, Thăng Bình, Tam Kỳ, Núi Thành, Đại Lộc...).
               </p>
               <div class="hero-security-pill">
                 <i class="fa-solid fa-shield-halved" style="color:var(--accent-cyan);"></i>
@@ -633,8 +633,8 @@
               <div class="kpi-meta">
                 <span class="kpi-title">TỔNG CA DỊCH BỆNH</span>
                 <span id="guest-kpi-total" class="kpi-number">23.209</span>
-                <span class="kpi-trend trend-cyan">
-                  <i class="fa-solid fa-map-pin"></i> 7 Quận/Huyện Đà Nẵng
+                <span id="guest-kpi-area-desc" class="kpi-trend trend-cyan">
+                  <i class="fa-solid fa-map-location-dot"></i> Toàn địa bàn & Mở rộng (94 TYT)
                 </span>
               </div>
             </div>
@@ -733,24 +733,34 @@
 
           </div>
 
-          <!-- HÀNG BIỂU ĐỒ TÌNH HÌNH DỊCH 2: SO SÁNH 7 QUẬN/HUYỆN & PHÂN VÙNG NGUY CƠ -->
+          <!-- HÀNG BIỂU ĐỒ TÌNH HÌNH DỊCH 2: SO SÁNH ĐỊA BÀN & PHÂN VÙNG NGUY CƠ -->
           <div class="charts-secondary-row">
 
-            <!-- BIỂU ĐỒ THANH XẾP CHỒNG 7 QUẬN/HUYỆN -->
+            <!-- BIỂU ĐỒ THANH XẾP CHỒNG ĐỊA BÀN ĐÀ NẴNG & MỞ RỘNG -->
             <div class="chart-glass-panel panel-districts-chart">
-              <div class="panel-header">
+              <div class="panel-header" style="flex-wrap:wrap; gap:0.5rem;">
                 <div>
                   <div class="panel-tag"><i class="fa-solid fa-chart-simple"></i> SO SÁNH ĐỊA BÀN</div>
-                  <h3 class="panel-title">Phân Bố Ca Bệnh Theo 7 Quận / Huyện TP. Đà Nẵng</h3>
+                  <h3 class="panel-title">Phân Bố Ca Bệnh Theo Địa Bàn & Khu Vực (Đà Nẵng & Vùng Mở Rộng)</h3>
                 </div>
-                <span class="badge-subtitle">Xếp chồng theo nhóm bệnh</span>
+                <div class="district-filter-tabs">
+                  <button type="button" class="d-tab-btn active" id="btn-dtab-all" onclick="setGuestDistrictFilter('all')">
+                    <i class="fa-solid fa-globe"></i> Tất cả địa bàn (15 khu vực)
+                  </button>
+                  <button type="button" class="d-tab-btn" id="btn-dtab-central" onclick="setGuestDistrictFilter('central')">
+                    <i class="fa-solid fa-city"></i> Đà Nẵng Trung tâm (7)
+                  </button>
+                  <button type="button" class="d-tab-btn" id="btn-dtab-expanded" onclick="setGuestDistrictFilter('expanded')">
+                    <i class="fa-solid fa-map-marked-alt"></i> Khu vực Mở rộng & Sáp nhập (8)
+                  </button>
+                </div>
               </div>
               <div class="panel-body chart-container-districts">
                 <canvas id="guest-chart-districts"></canvas>
               </div>
             </div>
 
-            <!-- PHÂN VÙNG MỨC ĐỘ NGUY CƠ ĐỊA BÀN (RISK HEATMAP TILES) -->
+            <!-- PHÂN VÙNG MỨC ĐỘ NGUY CƠ ĐỊA BÀN (RISK HEATMAP TILES TÍNH TOÁN ĐỘNG) -->
             <div class="chart-glass-panel panel-risk-tiles">
               <div class="panel-header">
                 <div>
@@ -760,90 +770,8 @@
                 <span class="badge-live-pulse"><i class="fa-solid fa-circle-dot"></i> Live Risk</span>
               </div>
               <div class="panel-body">
-                <div class="risk-district-grid">
-                  <div class="district-risk-card risk-high">
-                    <div class="d-risk-header">
-                      <span class="d-name">Quận Liên Chiểu</span>
-                      <span class="d-badge badge-high">Nguy cơ cao</span>
-                    </div>
-                    <div class="d-numbers">
-                      <div><b>2.300</b> ca bệnh</div>
-                      <div class="d-sub">SXH: 1.276 | TCM: 501</div>
-                    </div>
-                    <div class="d-bar"><div style="width:100%; background:#ef4444;"></div></div>
-                  </div>
-
-                  <div class="district-risk-card risk-high">
-                    <div class="d-risk-header">
-                      <span class="d-name">Quận Thanh Khê</span>
-                      <span class="d-badge badge-high">Nguy cơ cao</span>
-                    </div>
-                    <div class="d-numbers">
-                      <div><b>2.159</b> ca bệnh</div>
-                      <div class="d-sub">SXH: 1.341 | TCM: 493</div>
-                    </div>
-                    <div class="d-bar"><div style="width:94%; background:#ef4444;"></div></div>
-                  </div>
-
-                  <div class="district-risk-card risk-med">
-                    <div class="d-risk-header">
-                      <span class="d-name">Quận Cẩm Lệ</span>
-                      <span class="d-badge badge-med">Theo dõi chặt</span>
-                    </div>
-                    <div class="d-numbers">
-                      <div><b>1.814</b> ca bệnh</div>
-                      <div class="d-sub">SXH: 867 | TCM: 414</div>
-                    </div>
-                    <div class="d-bar"><div style="width:78%; background:#f97316;"></div></div>
-                  </div>
-
-                  <div class="district-risk-card risk-med">
-                    <div class="d-risk-header">
-                      <span class="d-name">Quận Sơn Trà</span>
-                      <span class="d-badge badge-med">Theo dõi chặt</span>
-                    </div>
-                    <div class="d-numbers">
-                      <div><b>1.781</b> ca bệnh</div>
-                      <div class="d-sub">SXH: 1.310 | TCM: 297</div>
-                    </div>
-                    <div class="d-bar"><div style="width:77%; background:#f97316;"></div></div>
-                  </div>
-
-                  <div class="district-risk-card risk-med">
-                    <div class="d-risk-header">
-                      <span class="d-name">Quận Ngũ Hành Sơn</span>
-                      <span class="d-badge badge-med">Theo dõi chặt</span>
-                    </div>
-                    <div class="d-numbers">
-                      <div><b>1.693</b> ca bệnh</div>
-                      <div class="d-sub">SXH: 1.218 | TCM: 284</div>
-                    </div>
-                    <div class="d-bar"><div style="width:73%; background:#f97316;"></div></div>
-                  </div>
-
-                  <div class="district-risk-card risk-low">
-                    <div class="d-risk-header">
-                      <span class="d-name">Quận Hải Châu</span>
-                      <span class="d-badge badge-low">Kiểm soát tốt</span>
-                    </div>
-                    <div class="d-numbers">
-                      <div><b>1.103</b> ca bệnh</div>
-                      <div class="d-sub">SXH: 547 | TCM: 297</div>
-                    </div>
-                    <div class="d-bar"><div style="width:48%; background:#eab308;"></div></div>
-                  </div>
-
-                  <div class="district-risk-card risk-safe">
-                    <div class="d-risk-header">
-                      <span class="d-name">Huyện Hòa Vang</span>
-                      <span class="d-badge badge-safe">Vùng an toàn</span>
-                    </div>
-                    <div class="d-numbers">
-                      <div><b>615</b> ca bệnh</div>
-                      <div class="d-sub">SXH: 310 | TCM: 167</div>
-                    </div>
-                    <div class="d-bar"><div style="width:26%; background:#10b981;"></div></div>
-                  </div>
+                <div id="guest-risk-district-grid" class="risk-district-grid" style="max-height:480px; overflow-y:auto; padding-right:4px;">
+                  <!-- Render động qua JavaScript -->
                 </div>
               </div>
             </div>
@@ -855,7 +783,7 @@
             <div class="panel-header">
               <div>
                 <div class="panel-tag"><i class="fa-solid fa-table-list"></i> DỮ LIỆU TỔNG HỢP</div>
-                <h3 class="panel-title">Bảng Thống Kê Dịch Bệnh Theo Địa Bàn Trọng Điểm Đà Nẵng</h3>
+                <h3 class="panel-title">Bảng Thống Kê Dịch Bệnh Toàn Thành Phố & Khu Vực Mở Rộng</h3>
               </div>
               <span class="badge-secure-data">
                 <i class="fa-solid fa-shield-halved"></i> Dữ liệu vĩ mô (Không chứa tọa độ cá nhân)
@@ -866,6 +794,7 @@
                 <thead>
                   <tr>
                     <th>Địa Bàn</th>
+                    <th>Phân Vùng</th>
                     <th style="text-align:right;">Sốt Xuất Huyết</th>
                     <th style="text-align:right;">Tay Chân Miệng</th>
                     <th style="text-align:right;">Cúm Mùa</th>

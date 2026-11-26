@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CDC Đà Nẵng - Hệ Thống Bản Đồ Dịch Tễ Học Số (GIS)</title>
   
+  <!-- Early Theme Init: Ngăn nháy sáng/tối khi tải trang -->
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("CDC_THEME_MODE") || "dark";
+        document.documentElement.setAttribute("data-theme", t);
+        if (t === "light") document.documentElement.classList.add("light-theme");
+      } catch(e) {}
+    })();
+  </script>
+  
   <!-- Font & Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
@@ -386,6 +397,12 @@
       <button onclick="printReport()" class="btn-header" title="In ấn báo cáo dịch tễ">
         <i class="fa-solid fa-print"></i>
         <span>Báo Cáo</span>
+      </button>
+
+      <!-- Nút Chuyển Chế độ Sáng / Tối -->
+      <button id="btn-toggle-theme" class="btn-header btn-theme" onclick="toggleTheme()" title="Chuyển chế độ Sáng / Tối">
+        <i id="theme-toggle-icon" class="fa-solid fa-sun" style="color:#fbbf24;"></i>
+        <span id="theme-toggle-text">Giao Diện Tối</span>
       </button>
 
       <!-- KHU VỰC TÀI KHOẢN & PHÂN QUYỀN -->

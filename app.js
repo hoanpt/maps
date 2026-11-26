@@ -72,10 +72,159 @@ const DISEASE_LABELS = {
 };
 
 // ============================================================================
+// QUẢN LÝ GIAO DIỆN CHẾ ĐỘ SÁNG / TỐI (THEME MANAGER)
+// ============================================================================
+function initTheme() {
+  const saved = localStorage.getItem("CDC_THEME_MODE") || "dark";
+  applyTheme(saved, false);
+}
+window.initTheme = initTheme;
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme") || "dark";
+  const nextTheme = current === "dark" ? "light" : "dark";
+  applyTheme(nextTheme, true);
+}
+window.toggleTheme = toggleTheme;
+
+function applyTheme(theme, save = true) {
+  if (save) {
+    try {
+      localStorage.setItem("CDC_THEME_MODE", theme);
+    } catch (e) {}
+  }
+
+  document.documentElement.setAttribute("data-theme", theme);
+  if (theme === "light") {
+    document.documentElement.classList.add("light-theme");
+    if (document.body) document.body.classList.add("light-theme");
+  } else {
+    document.documentElement.classList.remove("light-theme");
+    if (document.body) document.body.classList.remove("light-theme");
+  }
+
+  // Cập nhật biểu tượng và chữ hiển thị trên nút toggle
+  const icon = document.getElementById("theme-toggle-icon");
+  const text = document.getElementById("theme-toggle-text");
+  const btn = document.getElementById("btn-toggle-theme");
+
+  if (theme === "light") {
+    if (icon) {
+      icon.className = "fa-solid fa-moon";
+      icon.style.color = "#3b82f6";
+    }
+    if (text) text.innerText = "Giao Diện Sáng";
+    if (btn) btn.title = "Đang ở chế độ Sáng. Bấm để chuyển sang chế độ Tối";
+  } else {
+    if (icon) {
+      icon.className = "fa-solid fa-sun";
+      icon.style.color = "#fbbf24";
+    }
+    if (text) text.innerText = "Giao Diện Tối";
+    if (btn) btn.title = "Đang ở chế độ Tối. Bấm để chuyển sang chế độ Sáng";
+  }
+
+  // Cập nhật màu sắc biểu đồ Chart.js
+  updateChartsTheme(theme);
+
+  // Cập nhật bản đồ Leaflet
+  updateMapTheme(theme);
+}
+window.applyTheme = applyTheme;
+
+function updateChartsTheme(theme) {
+  const isLight = (theme === "light");
+  const tickColor = isLight ? "#64748b" : "#94a3b8";
+  const labelColor = isLight ? "#1e293b" : "#f8fafc";
+  const legendColor = isLight ? "#334155" : "#cbd5e1";
+  const gridColor = isLight ? "rgba(203, 213, 225, 0.6)" : "rgba(51, 65, 85, 0.35)";
+  const doughnutBorder = isLight ? "#ffffff" : "#0f172a";
+
+  // Guest Charts
+  if (state.guestCharts) {
+    if (state.guestCharts.trend) {
+      const c = state.guestCharts.trend;
+      if (c.options.scales && c.options.scales.x) {
+        c.options.scales.x.ticks.color = tickColor;
+      }
+      if (c.options.scales && c.options.scales.y) {
+        c.options.scales.y.ticks.color = tickColor;
+        c.options.scales.y.grid.color = gridColor;
+      }
+      c.update("none");
+    }
+
+    if (state.guestCharts.disease) {
+      const c = state.guestCharts.disease;
+      if (c.data.datasets && c.data.datasets[0]) {
+        c.data.datasets[0].borderColor = doughnutBorder;
+      }
+      if (c.options.plugins && c.options.plugins.legend) {
+        c.options.plugins.legend.labels.color = legendColor;
+      }
+      c.update("none");
+    }
+
+    if (state.guestCharts.districts) {
+      const c = state.guestCharts.districts;
+      if (c.options.scales && c.options.scales.x) {
+        c.options.scales.x.ticks.color = tickColor;
+        c.options.scales.x.grid.color = gridColor;
+      }
+      if (c.options.scales && c.options.scales.y) {
+        c.options.scales.y.ticks.color = labelColor;
+      }
+      if (c.options.plugins && c.options.plugins.legend) {
+        c.options.plugins.legend.labels.color = legendColor;
+      }
+      c.update("none");
+    }
+  }
+
+  // Sidebar Charts
+  if (state.charts) {
+    if (state.charts.disease) {
+      const c = state.charts.disease;
+      if (c.options.plugins && c.options.plugins.legend) {
+        c.options.plugins.legend.labels.color = tickColor;
+      }
+      c.update("none");
+    }
+    if (state.charts.trend) {
+      const c = state.charts.trend;
+      if (c.options.scales && c.options.scales.x) c.options.scales.x.ticks.color = tickColor;
+      if (c.options.scales && c.options.scales.y) {
+        c.options.scales.y.ticks.color = tickColor;
+        c.options.scales.y.grid.color = gridColor;
+      }
+      c.update("none");
+    }
+  }
+}
+
+function updateMapTheme(theme) {
+  if (typeof map === "undefined" || !map || typeof baseLayers === "undefined" || !baseLayers) return;
+  const isLight = (theme === "light");
+  const layerSelect = document.getElementById("select-base-layer");
+  if (layerSelect) {
+    if (!isLight && layerSelect.value === "light") {
+      layerSelect.value = "dark";
+      layerSelect.dispatchEvent(new Event("change"));
+    } else if (isLight && layerSelect.value === "dark") {
+      layerSelect.value = "light";
+      layerSelect.dispatchEvent(new Event("change"));
+    }
+  }
+}
+
+// ============================================================================
 // KHỞI ĐỘNG ỨNG DỤNG
 // ============================================================================
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("Khởi động Hệ thống Bản đồ Dịch tễ học số CDC Đà Nẵng...");
+  
+  // Khởi tạo Chế độ Giao diện (Sáng / Tối)
+  initTheme();
   
   try {
     // 1. Tải dữ liệu
@@ -102,6 +251,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 4. Khởi tạo các biểu đồ Chart.js (Sidebar & Guest Dashboard)
     initCharts();
     initGuestCharts();
+    updateChartsTheme(document.documentElement.getAttribute("data-theme") || "dark");
   } catch (err) {
     console.warn("Lỗi khởi tạo biểu đồ:", err);
   }

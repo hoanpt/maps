@@ -77,7 +77,7 @@
   --table-border: #e2e8f0;
   --kpi-card-bg: #ffffff;
   --risk-card-bg: #f8fafc;
-  --guest-bg: radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 45%), radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.05), transparent 40%), #f8fafc;
+  --guest-bg: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%);
 }
 
 * {
@@ -1150,10 +1150,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(1000px 600px at 20% 0%, rgba(14, 165, 233, 0.12), transparent),
-              radial-gradient(900px 500px at 85% 30%, rgba(249, 115, 22, 0.09), transparent),
-              radial-gradient(800px 600px at 50% 90%, rgba(16, 185, 129, 0.08), transparent),
-              #070d19;
+  background: var(--guest-bg);
   z-index: 20;
   overflow-y: auto;
   padding: 1.25rem 1.75rem;
@@ -2183,129 +2180,184 @@ body {
   background: #e2e8f0;
 }
 
-/* Guest View */
+/* Guest View in Light Mode */
 [data-theme="light"] .guest-view-container,
 .light-theme .guest-view-container {
-  background: var(--guest-bg);
+  background: var(--guest-bg) !important;
 }
 
 [data-theme="light"] .guest-hero-banner,
 .light-theme .guest-hero-banner {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.96) 100%);
-  border-color: #cbd5e1;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .guest-hero-banner::after,
+.light-theme .guest-hero-banner::after {
+  display: none !important;
 }
 
 [data-theme="light"] .hero-title,
 .light-theme .hero-title {
-  color: #0f172a;
+  color: #0f172a !important;
+  text-shadow: none !important;
 }
 
 [data-theme="light"] .hero-desc,
 .light-theme .hero-desc {
-  color: #334155;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .hero-badge,
+.light-theme .hero-badge {
+  background: #e0f2fe !important;
+  color: #0284c7 !important;
+  border-color: #bae6fd !important;
 }
 
 [data-theme="light"] .hero-security-pill,
 .light-theme .hero-security-pill {
-  background: rgba(2, 132, 199, 0.08);
-  border-color: rgba(2, 132, 199, 0.25);
-  color: #0369a1;
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
 }
 
 [data-theme="light"] .hero-access-card,
 .light-theme .hero-access-card {
-  background: #ffffff;
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  background: #f8fafc !important;
+  border: 1px solid #fed7aa !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04) !important;
 }
 
 [data-theme="light"] .access-card-head,
 .light-theme .access-card-head {
-  color: #0f172a;
-  border-bottom: 1px solid #e2e8f0;
+  color: #c2410c !important;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 [data-theme="light"] .access-card-text,
 .light-theme .access-card-text {
-  color: #475569;
+  color: #475569 !important;
 }
 
+[data-theme="light"] .access-card-hint,
+.light-theme .access-card-hint {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .access-card-hint code,
+.light-theme .access-card-hint code {
+  background: #e2e8f0 !important;
+  color: #0369a1 !important;
+}
+
+/* KPI Stat Cards in Light Mode */
 [data-theme="light"] .kpi-glass-card,
 .light-theme .kpi-glass-card {
-  background: #ffffff;
-  border-color: #e2e8f0;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .kpi-glass-card:hover,
+.light-theme .kpi-glass-card:hover {
+  border-color: #0284c7 !important;
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.1) !important;
 }
 
 [data-theme="light"] .kpi-meta .kpi-title,
 .light-theme .kpi-meta .kpi-title {
-  color: #64748b;
+  color: #64748b !important;
 }
 
 [data-theme="light"] .kpi-number,
 .light-theme .kpi-number {
-  color: #0f172a;
+  color: #0f172a !important;
 }
 
 [data-theme="light"] .kpi-sub-stats div,
 .light-theme .kpi-sub-stats div {
-  color: #475569;
+  color: #475569 !important;
 }
 
 [data-theme="light"] .kpi-sub-stats b,
 .light-theme .kpi-sub-stats b {
-  color: #0f172a;
+  color: #0f172a !important;
 }
 
+/* Charts & Analytics Panels */
 [data-theme="light"] .chart-glass-panel,
 .light-theme .chart-glass-panel {
-  background: #ffffff;
-  border-color: #e2e8f0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
 }
 
 [data-theme="light"] .panel-title,
 .light-theme .panel-title {
-  color: #0f172a;
+  color: #0f172a !important;
 }
 
 [data-theme="light"] .panel-header,
 .light-theme .panel-header {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+[data-theme="light"] .panel-desc,
+.light-theme .panel-desc {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .legend-pills,
+.light-theme .legend-pills,
+[data-theme="light"] .legend-pills span,
+.light-theme .legend-pills span {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .panel-tag,
+.light-theme .panel-tag {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
 }
 
 [data-theme="light"] .d-tab-btn,
 .light-theme .d-tab-btn {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #475569;
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
 }
 
 [data-theme="light"] .d-tab-btn:hover,
 .light-theme .d-tab-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-color: #94a3b8;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
 }
 
 [data-theme="light"] .d-tab-btn.active,
 .light-theme .d-tab-btn.active {
-  background: #e0f2fe;
-  border-color: #0284c7;
-  color: #0369a1;
-  box-shadow: 0 0 10px rgba(2, 132, 199, 0.2);
+  background: #e0f2fe !important;
+  border-color: #0284c7 !important;
+  color: #0369a1 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.15) !important;
 }
 
+/* District Risk Tiles */
 [data-theme="light"] .district-risk-card,
 .light-theme .district-risk-card {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03) !important;
 }
 
 [data-theme="light"] .district-risk-card:hover,
 .light-theme .district-risk-card:hover {
-  background: #f1f5f9;
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
 }
 
 [data-theme="light"] .district-risk-card .d-name,
@@ -2323,61 +2375,126 @@ body {
   color: #0f172a !important;
 }
 
+[data-theme="light"] .district-risk-card .d-sub,
+.light-theme .district-risk-card .d-sub {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .district-risk-card .val-tcm,
+.light-theme .district-risk-card .val-tcm {
+  color: #b45309 !important;
+}
+
 [data-theme="light"] .district-risk-card .d-bar,
 .light-theme .district-risk-card .d-bar {
   background: #e2e8f0 !important;
 }
 
+/* Table in Light Mode */
 [data-theme="light"] .glass-table thead th,
 .light-theme .glass-table thead th {
-  background: #f1f5f9;
-  color: #475569;
-  border-bottom: 2px solid #e2e8f0;
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
 }
 
 [data-theme="light"] .glass-table tbody td,
 .light-theme .glass-table tbody td {
-  color: #334155;
-  border-bottom: 1px solid #e2e8f0;
+  color: #334155 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
 }
 
 [data-theme="light"] .glass-table tbody tr:hover,
 .light-theme .glass-table tbody tr:hover {
-  background: #f8fafc;
+  background: #f8fafc !important;
 }
 
+[data-theme="light"] .td-district-name,
+.light-theme .td-district-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .td-total-cases,
+.light-theme .td-total-cases {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .td-tcm,
+.light-theme .td-tcm {
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .table-summary-row,
+.light-theme .table-summary-row {
+  background: #f1f5f9 !important;
+  border-top: 2px solid #0284c7 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .table-summary-row td,
+.light-theme .table-summary-row td {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .table-summary-row .sum-sxh,
+.light-theme .table-summary-row .sum-sxh {
+  color: #ea580c !important;
+}
+
+[data-theme="light"] .table-summary-row .sum-tcm,
+.light-theme .table-summary-row .sum-tcm {
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .table-summary-row .sum-cum,
+.light-theme .table-summary-row .sum-cum {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .table-summary-row .sum-other,
+.light-theme .table-summary-row .sum-other {
+  color: #9333ea !important;
+}
+
+[data-theme="light"] .table-summary-row .sum-total,
+.light-theme .table-summary-row .sum-total {
+  color: #0284c7 !important;
+}
+
+/* Guidance Cards */
 [data-theme="light"] .guidance-card,
 .light-theme .guidance-card {
-  background: #ffffff;
-  border-color: #e2e8f0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
 }
 
 [data-theme="light"] .guidance-body h4,
 .light-theme .guidance-body h4 {
-  color: #0f172a;
+  color: #0f172a !important;
 }
 
 [data-theme="light"] .guidance-body p,
 .light-theme .guidance-body p {
-  color: #475569;
+  color: #475569 !important;
 }
 
+/* Bottom CTA Banner */
 [data-theme="light"] .cta-glass-banner,
 .light-theme .cta-glass-banner {
-  background: linear-gradient(135deg, rgba(224, 242, 254, 0.85) 0%, rgba(255, 255, 255, 0.95) 100%);
-  border-color: rgba(56, 189, 248, 0.4);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%) !important;
+  border: 1px solid #bae6fd !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05) !important;
 }
 
 [data-theme="light"] .cta-left h3,
 .light-theme .cta-left h3 {
-  color: #0f172a;
+  color: #0f172a !important;
 }
 
 [data-theme="light"] .cta-left p,
 .light-theme .cta-left p {
-  color: #334155;
+  color: #334155 !important;
 }
 
 /* Modals */
@@ -2462,6 +2579,58 @@ body {
 .light-theme .btn-secondary:hover {
   background: #e2e8f0 !important;
   color: #0f172a !important;
+}
+
+/* Sidebar & Scope in Light Mode */
+[data-theme="light"] .scope-alert-card,
+.light-theme .scope-alert-card {
+  background: #fef3c7 !important;
+  border: 1px solid #fde68a !important;
+}
+
+[data-theme="light"] #scope-title,
+.light-theme #scope-title {
+  color: #92400e !important;
+}
+
+[data-theme="light"] #scope-desc,
+.light-theme #scope-desc {
+  color: #78350f !important;
+}
+
+[data-theme="light"] #scope-icon,
+.light-theme #scope-icon {
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .disease-pill,
+.light-theme .disease-pill {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .disease-pill.active,
+.light-theme .disease-pill.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .legend-card,
+.light-theme .legend-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .legend-title,
+.light-theme .legend-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .legend-item span,
+.light-theme .legend-item span {
+  color: #334155 !important;
 }
 
 /* Smooth transition for theme switching */

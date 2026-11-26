@@ -1650,16 +1650,16 @@ function renderGuestRiskTiles(stats) {
       <div class="district-risk-card ${riskClass}">
         <div class="d-risk-header" style="display:flex; justify-content:space-between; align-items:center;">
           <div style="display:flex; align-items:center; gap:0.25rem;">
-            <span class="d-name" style="font-weight:600; color:#f8fafc; font-size:0.82rem;">${st.name}</span>
+            <span class="d-name" style="font-weight:600; font-size:0.82rem;">${st.name}</span>
             ${typeBadge}
           </div>
           <span class="d-badge ${badgeClass}" style="font-size:0.68rem; padding:0.15rem 0.45rem;">${badgeText}</span>
         </div>
-        <div class="d-numbers" style="display:flex; justify-content:space-between; font-size:0.75rem; color:#cbd5e1; margin-top:0.15rem;">
-          <div><b style="color:#ffffff; font-size:0.88rem;">${st.total.toLocaleString('vi-VN')}</b> ca bệnh</div>
-          <div class="d-sub" style="color:#94a3b8; font-size:0.7rem;">SXH: <b style="color:#fb923c;">${st.sxh.toLocaleString('vi-VN')}</b> | TCM: <b style="color:#fde047;">${st.tcm.toLocaleString('vi-VN')}</b></div>
+        <div class="d-numbers" style="display:flex; justify-content:space-between; font-size:0.75rem; margin-top:0.15rem;">
+          <div><b style="font-size:0.88rem;">${st.total.toLocaleString('vi-VN')}</b> ca bệnh</div>
+          <div class="d-sub" style="font-size:0.7rem;">SXH: <b style="color:var(--accent-orange);">${st.sxh.toLocaleString('vi-VN')}</b> | TCM: <b class="val-tcm" style="color:var(--accent-yellow);">${st.tcm.toLocaleString('vi-VN')}</b></div>
         </div>
-        <div class="d-bar" style="height:5px; background:rgba(30,41,59,0.8); border-radius:3px; overflow:hidden; margin-top:0.2rem;">
+        <div class="d-bar" style="height:5px; border-radius:3px; overflow:hidden; margin-top:0.2rem;">
           <div style="width:${pctBar}%; height:100%; background:${barColor}; border-radius:3px;"></div>
         </div>
       </div>
@@ -1703,27 +1703,27 @@ function renderGuestDistrictTable(stats, total) {
     }
 
     const typeBadge = st.type === "central" 
-      ? '<span style="font-size:0.68rem; padding:0.15rem 0.45rem; border-radius:4px; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); white-space:nowrap;"><i class="fa-solid fa-city"></i> Trung tâm TP</span>'
-      : '<span style="font-size:0.68rem; padding:0.15rem 0.45rem; border-radius:4px; background:rgba(168,85,247,0.15); color:#c084fc; border:1px solid rgba(168,85,247,0.3); white-space:nowrap;"><i class="fa-solid fa-map-pin"></i> Mở rộng - Sáp nhập</span>';
+      ? '<span style="font-size:0.68rem; padding:0.15rem 0.45rem; border-radius:4px; background:rgba(56,189,248,0.15); color:var(--accent-cyan); border:1px solid rgba(56,189,248,0.3); white-space:nowrap;"><i class="fa-solid fa-city"></i> Trung tâm TP</span>'
+      : '<span style="font-size:0.68rem; padding:0.15rem 0.45rem; border-radius:4px; background:rgba(168,85,247,0.15); color:var(--accent-purple); border:1px solid rgba(168,85,247,0.3); white-space:nowrap;"><i class="fa-solid fa-map-pin"></i> Mở rộng - Sáp nhập</span>';
 
     html += `
       <tr>
-        <td style="font-weight:600; color:#f8fafc;">
+        <td class="td-district-name" style="font-weight:600;">
           <i class="fa-solid fa-location-dot" style="color:var(--accent-cyan); margin-right:6px;"></i>
           ${st.name}
         </td>
         <td style="text-align:center;">${typeBadge}</td>
-        <td style="text-align:right; color:#f97316; font-weight:600;">${st.sxh.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right; color:#eab308; font-weight:600;">${st.tcm.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right; color:#06b6d4;">${st.cum.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right; color:#a855f7;">${st.other.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right; font-weight:700; color:#ffffff;">${st.total.toLocaleString('vi-VN')}</td>
+        <td class="td-sxh" style="text-align:right; color:var(--accent-orange); font-weight:600;">${st.sxh.toLocaleString('vi-VN')}</td>
+        <td class="td-tcm" style="text-align:right; color:var(--accent-yellow); font-weight:600;">${st.tcm.toLocaleString('vi-VN')}</td>
+        <td class="td-cum" style="text-align:right; color:var(--accent-cyan);">${st.cum.toLocaleString('vi-VN')}</td>
+        <td class="td-other" style="text-align:right; color:var(--accent-purple);">${st.other.toLocaleString('vi-VN')}</td>
+        <td class="td-total-cases" style="text-align:right; font-weight:700;">${st.total.toLocaleString('vi-VN')}</td>
         <td style="text-align:center;">
           <div style="display:flex; align-items:center; gap:6px; justify-content:center;">
-            <div style="width:70px; height:6px; background:#1e293b; border-radius:3px; overflow:hidden;">
+            <div style="width:70px; height:6px; background:var(--border-color); border-radius:3px; overflow:hidden;">
               <div style="width:${Math.min(parseFloat(pct) * 5, 100)}%; height:100%; background:var(--accent-cyan);"></div>
             </div>
-            <span style="font-size:0.72rem; color:#94a3b8; min-width:32px;">${pct}%</span>
+            <span style="font-size:0.72rem; color:var(--text-muted); min-width:32px;">${pct}%</span>
           </div>
         </td>
         <td style="text-align:center;">
@@ -1737,23 +1737,23 @@ function renderGuestDistrictTable(stats, total) {
   const filter = state.guestDistrictFilter || "all";
   if (filter === "all") {
     html += `
-      <tr style="background:rgba(15,23,42,0.9); border-top:2px solid rgba(56,189,248,0.4); font-weight:700;">
+      <tr class="table-summary-row" style="font-weight:700;">
         <td style="color:var(--accent-cyan);">
           <i class="fa-solid fa-calculator" style="margin-right:6px;"></i> TỔNG CỘNG TOÀN ĐỊA BÀN
         </td>
         <td style="text-align:center;">
-          <span style="font-size:0.68rem; padding:0.15rem 0.45rem; border-radius:4px; background:rgba(56,189,248,0.25); color:#7dd3fc; border:1px solid rgba(56,189,248,0.4);">
+          <span style="font-size:0.68rem; padding:0.15rem 0.45rem; border-radius:4px; background:rgba(56,189,248,0.15); color:var(--accent-cyan); border:1px solid rgba(56,189,248,0.4);">
             15 Khu vực (94 TYT)
           </span>
         </td>
-        <td style="text-align:right; color:#f97316;">${totalSxh.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right; color:#eab308;">${totalTcm.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right; color:#06b6d4;">${totalCum.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right; color:#a855f7;">${totalOther.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right; color:#38bdf8; font-size:0.92rem;">${totalFiltered.toLocaleString('vi-VN')}</td>
-        <td style="text-align:center; color:#38bdf8;">100.0%</td>
+        <td class="sum-sxh" style="text-align:right; color:var(--accent-orange);">${totalSxh.toLocaleString('vi-VN')}</td>
+        <td class="sum-tcm" style="text-align:right; color:var(--accent-yellow);">${totalTcm.toLocaleString('vi-VN')}</td>
+        <td class="sum-cum" style="text-align:right; color:var(--accent-cyan);">${totalCum.toLocaleString('vi-VN')}</td>
+        <td class="sum-other" style="text-align:right; color:var(--accent-purple);">${totalOther.toLocaleString('vi-VN')}</td>
+        <td class="sum-total" style="text-align:right; color:var(--accent-cyan); font-size:0.92rem;">${totalFiltered.toLocaleString('vi-VN')}</td>
+        <td style="text-align:center; color:var(--accent-cyan);">100.0%</td>
         <td style="text-align:center;">
-          <span class="status-badge badge-warning" style="background:rgba(56,189,248,0.15); color:#38bdf8; border-color:rgba(56,189,248,0.4);">
+          <span class="status-badge badge-warning" style="background:rgba(56,189,248,0.15); color:var(--accent-cyan); border-color:rgba(56,189,248,0.4);">
             Toàn hệ thống
           </span>
         </td>

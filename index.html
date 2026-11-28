@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
   
   <!-- Custom Styles (với cache buster) -->
-  <link rel="stylesheet" href="styles.css?v=3.4.0">
+  <link rel="stylesheet" href="styles.css?v=3.6.0">
   
   <!-- Fallback SHA-256 (hoạt động trên cả HTTP, HTTPS, di động, không phụ thuộc crypto.subtle) -->
   <script src="sha256.min.js"></script>
@@ -996,8 +996,11 @@
             <div class="chart-glass-panel panel-trend">
               <div class="panel-header" style="flex-wrap:wrap; gap:0.6rem;">
                 <div>
-                  <div class="panel-tag"><i class="fa-solid fa-chart-line"></i> ĐƯỜNG CONG DỊCH TỄ (EPIDEMIC CURVE)</div>
+                  <div class="panel-tag" id="guest-trend-tag"><i class="fa-solid fa-chart-line" style="color:#f97316;"></i> ĐƯỜNG CONG DỊCH TỄ (52 TUẦN DỊCH TỄ)</div>
                   <h3 class="panel-title" id="guest-trend-title">Diễn Biến 52 Tuần Dịch Tễ Năm 2026 vs Cùng Kỳ 2025</h3>
+                  <div id="guest-trend-subtitle" style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
+                    Hiển thị chi tiết số ca mắc mới ghi nhận từng tuần (Tuần 1 đến Tuần 48)
+                  </div>
                 </div>
                 <div class="trend-controls-bar">
                   <div class="view-mode-pills">
@@ -1827,13 +1830,13 @@
   <script src="https://cdn.sheetjs.com/xlsx-0.18.5/package/dist/xlsx.full.min.js"></script>
 
   <!-- 7. DỮ LIỆU ĐỊA BÀN & DỊCH TỄ HỌC ĐÀ NẴNG -->
-  <script src="danang_districts.js?v=3.2.0"></script>
-  <script src="danang_facilities.js?v=3.2.0"></script>
-  <script src="data_epidemiology.js?v=3.2.0"></script>
-  <script src="data_cdc_2026_macro.js?v=3.5.0"></script>
+  <script src="danang_districts.js?v=3.6.0"></script>
+  <script src="danang_facilities.js?v=3.6.0"></script>
+  <script src="data_epidemiology.js?v=3.6.0"></script>
+  <script src="data_cdc_2026_macro.js?v=3.6.0"></script>
 
   <!-- 8. CORE APPLICATION LOGIC -->
-  <script src="app.js?v=3.5.0"></script>
+  <script src="app.js?v=3.6.0"></script>
 
 </body>
 </html>

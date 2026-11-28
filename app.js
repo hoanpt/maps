@@ -1588,6 +1588,46 @@ function initGuestCharts() {
   }
 }
 
+// Tự động trích xuất và tính toán 12 tháng từ dữ liệu vĩ mô CDC (có cơ chế dự phòng fail-safe)
+function getMonthlyTrendsData(macro) {
+  if (macro && Array.isArray(macro.monthlyTrends2026) && macro.monthlyTrends2026.length === 12) {
+    return macro.monthlyTrends2026;
+  }
+  // Tự động tổng hợp 12 tháng từ 48 tuần dịch tễ nếu chưa có trường monthlyTrends2026
+  const wt = (macro && macro.weeklyTrends) ? macro.weeklyTrends : [];
+  const monthRanges = [
+    { label: "Tháng 1", weeks: [1, 2, 3, 4] },
+    { label: "Tháng 2", weeks: [5, 6, 7, 8] },
+    { label: "Tháng 3", weeks: [9, 10, 11, 12, 13] },
+    { label: "Tháng 4", weeks: [14, 15, 16, 17] },
+    { label: "Tháng 5", weeks: [18, 19, 20, 21] },
+    { label: "Tháng 6", weeks: [22, 23, 24, 25, 26] },
+    { label: "Tháng 7", weeks: [27, 28, 29, 30] },
+    { label: "Tháng 8", weeks: [31, 32, 33, 34, 35] },
+    { label: "Tháng 9", weeks: [36, 37, 38, 39] },
+    { label: "Tháng 10", weeks: [40, 41, 42, 43, 44] },
+    { label: "Tháng 11", weeks: [45, 46, 47, 48] },
+    { label: "Tháng 12", weeks: [49, 50, 51, 52] }
+  ];
+  let prev2025 = 0;
+  return monthRanges.map(mr => {
+    const wItems = mr.weeks.map(w => wt[w - 1]).filter(Boolean);
+    const sxh = wItems.reduce((acc, cur) => acc + (cur.sxh_2026 || 0), 0);
+    const tcm = wItems.reduce((acc, cur) => acc + (cur.tcm_2026 || 0), 0);
+    const lastItem = wItems[wItems.length - 1];
+    const cum2025 = lastItem ? (lastItem.sxh_2025 || 0) : 0;
+    const sxh2025 = Math.max(0, cum2025 - prev2025);
+    if (cum2025 > 0) prev2025 = cum2025;
+    return {
+      month: mr.label,
+      sxh_2026: sxh,
+      tcm_2026: tcm,
+      sxh_2025: sxh2025,
+      total_2026: sxh + tcm
+    };
+  });
+}
+
 // Chuyển đổi chế độ xem Đường cong Dịch tễ (52 tuần vs Theo Tháng)
 window.setGuestTrendMode = function(mode) {
   state.guestTrendMode = mode || "week";
@@ -1597,10 +1637,17 @@ window.setGuestTrendMode = function(mode) {
   if (btnMonth) btnMonth.classList.toggle("active", state.guestTrendMode === "month");
 
   const titleEl = document.getElementById("guest-trend-title");
-  if (titleEl) {
-    titleEl.innerText = state.guestTrendMode === "week"
-      ? "Diễn Biến 52 Tuần Dịch Tễ Năm 2026 vs Cùng Kỳ 2025"
-      : "Diễn Biến Ca Mắc Theo Tháng (12 Tháng Năm 2026)";
+  const tagEl = document.getElementById("guest-trend-tag");
+  const subEl = document.getElementById("guest-trend-subtitle");
+
+  if (state.guestTrendMode === "week") {
+    if (titleEl) titleEl.innerText = "Diễn Biến 52 Tuần Dịch Tễ Năm 2026 vs Cùng Kỳ 2025";
+    if (tagEl) tagEl.innerHTML = '<i class="fa-solid fa-chart-line" style="color:#f97316;"></i> ĐƯỜNG CONG DỊCH TỄ (52 TUẦN DỊCH TỄ)';
+    if (subEl) subEl.innerText = "Hiển thị chi tiết số ca mắc mới ghi nhận từng tuần (Tuần 1 đến Tuần 48)";
+  } else {
+    if (titleEl) titleEl.innerText = "Tổng Hợp Ca Mắc Theo Tháng (12 Tháng Năm 2026)";
+    if (tagEl) tagEl.innerHTML = '<i class="fa-solid fa-calendar-days" style="color:#0ea5e9;"></i> TỔNG HỢP THEO THÁNG (12 THÁNG NĂM 2026)';
+    if (subEl) subEl.innerText = "Số liệu ca bệnh tổng hợp theo 12 tháng dương lịch (Đỉnh dịch Tháng 11: 7.812 ca)";
   }
   updateGuestTrendChart(state.guestTrendMode);
 };
@@ -1608,23 +1655,28 @@ window.setGuestTrendMode = function(mode) {
 function updateGuestTrendChart(mode = "week") {
   if (!state.guestCharts || !state.guestCharts.trend) return;
   const macro = window.CDC_2026_MACRO_DATA;
+  const chart = state.guestCharts.trend;
 
   if (mode === "week" && macro && macro.weeklyTrends) {
     const wt = macro.weeklyTrends;
-    state.guestCharts.trend.data.labels = wt.map(w => w.week);
-    state.guestCharts.trend.data.datasets[0].data = wt.map(w => w.sxh_2026 || 0);
-    state.guestCharts.trend.data.datasets[1].data = wt.map(w => w.tcm_2026 || 0);
-    state.guestCharts.trend.data.datasets[2].data = wt.map(w => w.sxh_2025 || 0);
-    state.guestCharts.trend.data.datasets[3].data = wt.map(w => w.total_2026 || 0);
-    state.guestCharts.trend.update();
-  } else if (mode === "month" && macro && macro.monthlyTrends2026) {
-    const mt = macro.monthlyTrends2026;
-    state.guestCharts.trend.data.labels = mt.map(m => m.month);
-    state.guestCharts.trend.data.datasets[0].data = mt.map(m => m.sxh_2026 || 0);
-    state.guestCharts.trend.data.datasets[1].data = mt.map(m => m.tcm_2026 || 0);
-    state.guestCharts.trend.data.datasets[2].data = mt.map(m => m.sxh_2025 || 0);
-    state.guestCharts.trend.data.datasets[3].data = mt.map(m => m.total_2026 || 0);
-    state.guestCharts.trend.update();
+    chart.data.labels = wt.map(w => w.label || ("Tuần " + String(w.week || "").replace("T", "")));
+    chart.data.datasets[0].data = wt.map(w => w.sxh_2026 || 0);
+    chart.data.datasets[0].barPercentage = 0.95;
+    chart.data.datasets[1].data = wt.map(w => w.tcm_2026 || 0);
+    chart.data.datasets[1].barPercentage = 0.95;
+    chart.data.datasets[2].data = wt.map(w => w.sxh_2025 || 0);
+    chart.data.datasets[3].data = wt.map(w => w.total_2026 || 0);
+    chart.update();
+  } else if (mode === "month" && macro) {
+    const mt = getMonthlyTrendsData(macro);
+    chart.data.labels = mt.map(m => String(m.month || "").replace("Tháng 0", "Tháng "));
+    chart.data.datasets[0].data = mt.map(m => m.sxh_2026 || 0);
+    chart.data.datasets[0].barPercentage = 0.65;
+    chart.data.datasets[1].data = mt.map(m => m.tcm_2026 || 0);
+    chart.data.datasets[1].barPercentage = 0.65;
+    chart.data.datasets[2].data = mt.map(m => m.sxh_2025 || 0);
+    chart.data.datasets[3].data = mt.map(m => m.total_2026 || 0);
+    chart.update();
   } else {
     // Chế độ Tháng fallback từ file Excel tùy biến
     const sxhMap = {};
@@ -1647,12 +1699,14 @@ function updateGuestTrendChart(mode = "week") {
       }
     });
 
-    state.guestCharts.trend.data.labels = state.allMonths.map(m => m.substring(5) + "/" + m.substring(2, 4));
-    state.guestCharts.trend.data.datasets[0].data = state.allMonths.map(m => sxhMap[m]);
-    state.guestCharts.trend.data.datasets[1].data = state.allMonths.map(m => tcmMap[m]);
-    state.guestCharts.trend.data.datasets[2].data = state.allMonths.map(() => null);
-    state.guestCharts.trend.data.datasets[3].data = state.allMonths.map(m => totalMap[m]);
-    state.guestCharts.trend.update();
+    chart.data.labels = state.allMonths.map(m => m.substring(5) + "/" + m.substring(2, 4));
+    chart.data.datasets[0].data = state.allMonths.map(m => sxhMap[m]);
+    chart.data.datasets[0].barPercentage = 0.7;
+    chart.data.datasets[1].data = state.allMonths.map(m => tcmMap[m]);
+    chart.data.datasets[1].barPercentage = 0.7;
+    chart.data.datasets[2].data = state.allMonths.map(() => null);
+    chart.data.datasets[3].data = state.allMonths.map(m => totalMap[m]);
+    chart.update();
   }
 }
 
@@ -2403,6 +2457,22 @@ function initUIEvents() {
         ? `<i class="fa-solid fa-chevron-right"></i>` 
         : `<i class="fa-solid fa-chevron-left"></i>`;
       setTimeout(() => { if (map) map.invalidateSize(); }, 350);
+    });
+  }
+
+  // Nút chuyển đổi chế độ xem Đường cong Dịch tễ (52 tuần vs Theo Tháng)
+  const btnTrendWeek = document.getElementById("btn-trend-week");
+  const btnTrendMonth = document.getElementById("btn-trend-month");
+  if (btnTrendWeek) {
+    btnTrendWeek.addEventListener("click", (e) => {
+      e.preventDefault();
+      setGuestTrendMode("week");
+    });
+  }
+  if (btnTrendMonth) {
+    btnTrendMonth.addEventListener("click", (e) => {
+      e.preventDefault();
+      setGuestTrendMode("month");
     });
   }
 

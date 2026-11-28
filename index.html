@@ -864,18 +864,18 @@
               </h2>
               <p class="hero-desc">
                 Hệ thống phân tích dịch tễ học và giám sát ổ dịch thời gian thực của <b>CDC Đà Nẵng</b>. 
-                Số liệu ca bệnh được đồng bộ trực tuyến tự động từ Google Sheet điều hành của 94 trạm y tế trên toàn địa bàn thành phố và các khu vực liên kết dịch tễ mở rộng (Điện Bàn, Hội An, Duy Xuyên, Thăng Bình, Tam Kỳ, Núi Thành, Đại Lộc...).
+                Số liệu ca bệnh được cập nhật trực tuyến từ cơ sở dữ liệu báo cáo giám sát dịch tễ hợp nhất của 94 trạm y tế trên toàn địa bàn thành phố và các khu vực liên kết dịch tễ mở rộng (Điện Bàn, Hội An, Duy Xuyên, Thăng Bình, Tam Kỳ, Núi Thành, Đại Lộc...).
               </p>
               
-              <!-- THANH TRẠNG THÁI ĐỒNG BỘ TRỰC TUYẾN GOOGLE SHEET -->
+              <!-- THANH CẬP NHẬT DỮ LIỆU BÁO CÁO GIÁM SÁT MỚI NHẤT -->
               <div class="cdc-live-sync-bar">
                 <div class="sync-status-indicator">
                   <span class="sync-pulse-dot"></span>
-                  <span id="cdc-sync-status-label">Dữ liệu CDC 2026: Tuần 48 (19.739 ca) • Đã kết nối Google Sheet</span>
+                  <span id="cdc-sync-status-label">Dữ liệu CDC 2026: Tuần 48 (19.739 ca) • Nguồn báo cáo dịch tễ hợp nhất</span>
                 </div>
-                <button id="btn-manual-cdc-sync" type="button" class="btn-sync-action" onclick="triggerCdcLiveSync(true)" title="Cập nhật số liệu mới nhất trực tiếp từ Google Sheet CDC Đà Nẵng">
+                <button id="btn-manual-cdc-sync" type="button" class="btn-sync-action" onclick="triggerCdcLiveSync(true)" title="Cập nhật số liệu dịch tễ mới nhất từ file tổng hợp báo cáo trực tuyến của CDC Đà Nẵng">
                   <i class="fa-solid fa-arrows-rotate" id="cdc-sync-icon"></i>
-                  <span id="cdc-btn-sync-text">Đồng Bộ Google Sheet</span>
+                  <span id="cdc-btn-sync-text">Cập nhật dữ liệu mới nhất</span>
                 </button>
               </div>
 
@@ -906,7 +906,7 @@
             </div>
           </div>
 
-          <!-- 5 THẺ CHỈ SỐ KPI NEON GLASSMORPHISM (SỐ LIỆU 2026 TỔNG HỢP GOOGLE SHEET) -->
+          <!-- 5 THẺ CHỈ SỐ KPI NEON GLASSMORPHISM (SỐ LIỆU 2026 TỔNG HỢP BÁO CÁO GIÁM SÁT DỊCH TỄ HỢP NHẤT) -->
           <div class="guest-kpi-grid">
             <div class="kpi-glass-card kpi-glow-cyan">
               <div class="kpi-icon-box cyan-glow">

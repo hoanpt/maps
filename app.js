@@ -1271,9 +1271,9 @@ const cdcMacroService = {
     const syncIcon = document.getElementById("cdc-sync-icon");
     const statusLabel = document.getElementById("cdc-sync-status-label");
 
-    if (btnText) btnText.innerText = "Đang đồng bộ...";
+    if (btnText) btnText.innerText = "Đang cập nhật...";
     if (syncIcon) syncIcon.classList.add("fa-spin");
-    if (statusLabel) statusLabel.innerText = "Đang kết nối Google Sheet CDC Đà Nẵng...";
+    if (statusLabel) statusLabel.innerText = "Đang kết nối cơ sở dữ liệu báo cáo CDC Đà Nẵng...";
 
     try {
       const url = `https://docs.google.com/spreadsheets/d/${this.sheetId}/gviz/tq?tqx=out:json&sheet=Table%202026`;
@@ -1288,28 +1288,28 @@ const cdcMacroService = {
         const timeStr = this.lastSyncTime.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
         if (statusLabel) {
           const kpis = window.CDC_2026_MACRO_DATA?.kpis;
-          statusLabel.innerText = `CDC 2026: Tuần 48 (${(kpis?.totalCases2026 || 19739).toLocaleString("vi-VN")} ca) • Đồng bộ lúc ${timeStr}`;
+          statusLabel.innerText = `CDC 2026: Tuần 48 (${(kpis?.totalCases2026 || 19739).toLocaleString("vi-VN")} ca) • Cập nhật lúc ${timeStr}`;
         }
         if (isManual) {
           if (typeof showNotification === "function") {
-            showNotification("Đã đồng bộ thành công số liệu dịch tễ mới nhất từ Google Sheet!", "success");
+            showNotification("Đã cập nhật thành công số liệu dịch tễ mới nhất từ báo cáo tổng hợp!", "success");
           }
         }
         updateGuestDashboard();
       }
     } catch (err) {
-      console.warn("Lỗi đồng bộ trực tuyến CDC Google Sheet:", err);
+      console.warn("Lỗi cập nhật dữ liệu trực tuyến CDC:", err);
       if (statusLabel) {
-        statusLabel.innerText = "Dữ liệu CDC 2026 (Tuần 48) • Chế độ ngoại tuyến sẵn sàng";
+        statusLabel.innerText = "Dữ liệu CDC 2026 (Tuần 48) • Sẵn sàng chế độ lưu trữ";
       }
       if (isManual) {
         if (typeof showNotification === "function") {
-          showNotification("Chưa thể cập nhật qua Google Sheet, đang dùng số liệu chuẩn CDC lưu trữ.", "warning");
+          showNotification("Đang sử dụng số liệu chuẩn lưu trữ từ báo cáo tổng hợp gần nhất.", "info");
         }
       }
     } finally {
       this.isSyncing = false;
-      if (btnText) btnText.innerText = "Đồng Bộ Google Sheet";
+      if (btnText) btnText.innerText = "Cập nhật dữ liệu mới nhất";
       if (syncIcon) syncIcon.classList.remove("fa-spin");
     }
   },

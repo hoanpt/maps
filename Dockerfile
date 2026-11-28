@@ -25,6 +25,7 @@ COPY danang_facilities.js /usr/share/nginx/html/
 COPY danang_facilities.json /usr/share/nginx/html/
 COPY data_epidemiology.js /usr/share/nginx/html/
 COPY data_epidemiology.json /usr/share/nginx/html/
+COPY data_cdc_2026_macro.js /usr/share/nginx/html/
 
 # Phân quyền tệp tin cho người dùng nginx
 RUN chown -R nginx:nginx /usr/share/nginx/html \

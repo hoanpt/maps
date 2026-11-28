@@ -3104,6 +3104,13 @@ body, .header-bar, .sidebar, .guest-view-container, .chart-glass-panel, .kpi-gla
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.trend-tab-btn * {
+  pointer-events: none;
 }
 
 .trend-tab-btn:hover {

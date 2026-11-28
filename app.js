@@ -1600,7 +1600,7 @@ window.setGuestTrendMode = function(mode) {
   if (titleEl) {
     titleEl.innerText = state.guestTrendMode === "week"
       ? "Diễn Biến 52 Tuần Dịch Tễ Năm 2026 vs Cùng Kỳ 2025"
-      : "Diễn Biến Ca Mắc Theo Tháng (Năm 2026)";
+      : "Diễn Biến Ca Mắc Theo Tháng (12 Tháng Năm 2026)";
   }
   updateGuestTrendChart(state.guestTrendMode);
 };
@@ -1616,9 +1616,17 @@ function updateGuestTrendChart(mode = "week") {
     state.guestCharts.trend.data.datasets[1].data = wt.map(w => w.tcm_2026 || 0);
     state.guestCharts.trend.data.datasets[2].data = wt.map(w => w.sxh_2025 || 0);
     state.guestCharts.trend.data.datasets[3].data = wt.map(w => w.total_2026 || 0);
-    state.guestCharts.trend.update("none");
+    state.guestCharts.trend.update();
+  } else if (mode === "month" && macro && macro.monthlyTrends2026) {
+    const mt = macro.monthlyTrends2026;
+    state.guestCharts.trend.data.labels = mt.map(m => m.month);
+    state.guestCharts.trend.data.datasets[0].data = mt.map(m => m.sxh_2026 || 0);
+    state.guestCharts.trend.data.datasets[1].data = mt.map(m => m.tcm_2026 || 0);
+    state.guestCharts.trend.data.datasets[2].data = mt.map(m => m.sxh_2025 || 0);
+    state.guestCharts.trend.data.datasets[3].data = mt.map(m => m.total_2026 || 0);
+    state.guestCharts.trend.update();
   } else {
-    // Chế độ Tháng
+    // Chế độ Tháng fallback từ file Excel tùy biến
     const sxhMap = {};
     const tcmMap = {};
     const totalMap = {};
@@ -1644,7 +1652,7 @@ function updateGuestTrendChart(mode = "week") {
     state.guestCharts.trend.data.datasets[1].data = state.allMonths.map(m => tcmMap[m]);
     state.guestCharts.trend.data.datasets[2].data = state.allMonths.map(() => null);
     state.guestCharts.trend.data.datasets[3].data = state.allMonths.map(m => totalMap[m]);
-    state.guestCharts.trend.update("none");
+    state.guestCharts.trend.update();
   }
 }
 
@@ -2204,6 +2212,8 @@ function updateViewMode() {
   const viewToggle = document.getElementById("view-mode-toggle");
   const btnViewMap = document.getElementById("btn-view-map");
   const btnViewDash = document.getElementById("btn-view-dashboard");
+  const sidebarToggle = document.getElementById("sidebar-toggle");
+  const sidebar = document.getElementById("sidebar");
 
   if (!isAuth) {
     // CHẾ ĐỘ KHÁCH: KHÔNG CÓ BẢN ĐỒ, KHÔNG CHO PHÉP ZOOM
@@ -2216,6 +2226,8 @@ function updateViewMode() {
     if (simBanner) simBanner.style.display = "none";
     if (btnSim) btnSim.style.display = "none";
     if (btnUpload) btnUpload.style.display = "none";
+    if (sidebarToggle) sidebarToggle.style.display = "none";
+    if (sidebar) sidebar.style.display = "none";
 
     // XÓA TOÀN BỘ CÁC ĐIỂM / LỚP TRÊN BẢN ĐỒ ĐỂ TUYỆT ĐỐI BẢO MẬT
     if (layerGroups.caseMarkers) layerGroups.caseMarkers.clearLayers();
@@ -2235,6 +2247,8 @@ function updateViewMode() {
     if (layerControl) layerControl.style.display = "block";
     if (mapLegend) mapLegend.style.display = "block";
     if (timeDock) timeDock.style.display = "block";
+    if (sidebarToggle) sidebarToggle.style.display = "";
+    if (sidebar) sidebar.style.display = "";
 
     if (user && user.role === "ADMIN") {
       if (btnSim) btnSim.style.display = "flex";

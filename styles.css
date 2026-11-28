@@ -1946,6 +1946,15 @@ body {
    MOBILE & TABLET RESPONSIVE STYLES
    ========================================================================== */
 @media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    width: 100% !important;
+  }
+  .app-container {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
   .header-bar {
     height: auto;
     min-height: 52px;
@@ -1972,48 +1981,276 @@ body {
     font-size: 0.75rem;
   }
   .guest-view-container {
-    padding: 0.75rem 0.65rem;
+    padding: 0.65rem 0.5rem !important;
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .guest-scroll-content {
+    gap: 0.75rem !important;
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   .guest-hero-banner {
     flex-direction: column;
     align-items: stretch;
-    padding: 1.15rem 1rem;
-    gap: 1rem;
+    padding: 1rem 0.85rem !important;
+    gap: 0.85rem !important;
   }
   .hero-title {
-    font-size: 1.15rem;
+    font-size: 1.1rem !important;
+    line-height: 1.35 !important;
   }
   .hero-access-card {
-    max-width: 100%;
-    width: 100%;
+    max-width: 100% !important;
+    width: 100% !important;
   }
+
+  /* CDC LIVE SYNC BAR MOBILE */
+  .cdc-live-sync-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+    padding: 0.65rem 0.75rem !important;
+    margin: 0.45rem 0 !important;
+    box-sizing: border-box !important;
+  }
+  .sync-status-indicator {
+    font-size: 0.73rem !important;
+    line-height: 1.3 !important;
+    word-break: break-word !important;
+  }
+  .btn-sync-action {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 0.45rem 0.75rem !important;
+  }
+
+  /* KPI STATS CARDS MOBILE */
   .guest-kpi-grid {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 0.6rem;
+    gap: 0.5rem !important;
   }
   .guest-kpi-grid > :nth-child(5) {
-    grid-column: span 2;
+    grid-column: span 2 !important;
   }
   .kpi-glass-card {
-    padding: 0.75rem;
-    gap: 0.65rem;
+    padding: 0.65rem 0.55rem !important;
+    gap: 0.5rem !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+  .kpi-icon {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    font-size: 0.85rem !important;
   }
   .kpi-number {
-    font-size: 1.25rem;
+    font-size: 1.18rem !important;
   }
+  .kpi-label {
+    font-size: 0.68rem !important;
+    line-height: 1.25 !important;
+  }
+  .kpi-sub-line {
+    font-size: 0.64rem !important;
+    flex-wrap: wrap !important;
+    white-space: normal !important;
+    line-height: 1.25 !important;
+    margin: 0.15rem 0 !important;
+    gap: 0.2rem !important;
+  }
+  .kpi-sub-line b {
+    font-size: 0.65rem !important;
+  }
+  .kpi-trend {
+    font-size: 0.62rem !important;
+    white-space: normal !important;
+    padding: 0.05rem 0.3rem !important;
+  }
+
+  /* CHART PANELS MOBILE */
   .charts-primary-row,
   .charts-secondary-row {
     grid-template-columns: 1fr !important;
-    gap: 0.85rem;
+    gap: 0.75rem !important;
+  }
+  .chart-glass-panel {
+    padding: 0.85rem 0.75rem !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
   }
   .chart-container-trend,
   .chart-container-disease,
   .chart-container-districts {
-    height: 240px !important;
+    height: 250px !important;
   }
-  .chart-glass-panel {
-    padding: 0.95rem 1rem;
+
+  .panel-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.45rem !important;
+    margin-bottom: 0.65rem !important;
   }
+  .panel-title {
+    font-size: 0.88rem !important;
+    line-height: 1.35 !important;
+  }
+
+  /* EPIDEMIC CURVE CONTROLS MOBILE */
+  .trend-controls-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+  .view-mode-pills {
+    display: flex !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .trend-tab-btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    text-align: center !important;
+    font-size: 0.74rem !important;
+    padding: 0.45rem 0.4rem !important;
+  }
+  .legend-pills {
+    flex-wrap: wrap !important;
+    gap: 0.45rem !important;
+    font-size: 0.68rem !important;
+  }
+
+  /* TOP 5 XÃ & HOTSPOTS MOBILE */
+  .panel-hotspots {
+    padding: 0.85rem 0.75rem !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+  .hotspots-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+  .hotspot-column-card {
+    padding: 0.75rem 0.65rem !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    gap: 0.5rem !important;
+  }
+  .hotspot-col-header {
+    font-size: 0.76rem !important;
+    line-height: 1.3 !important;
+    flex-wrap: wrap !important;
+    gap: 0.35rem !important;
+    padding-bottom: 0.4rem !important;
+  }
+  .hotspot-item {
+    padding: 0.4rem 0.5rem !important;
+    gap: 0.45rem !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+  .hotspot-rank {
+    width: 20px !important;
+    height: 20px !important;
+    font-size: 0.65rem !important;
+    flex-shrink: 0 !important;
+  }
+  .hotspot-info {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    flex: 1 !important;
+  }
+  .hotspot-name {
+    font-size: 0.75rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+    max-width: 100% !important;
+  }
+  .hotspot-district {
+    font-size: 0.65rem !important;
+    display: inline-block !important;
+  }
+  .hotspot-metric {
+    font-size: 0.67rem !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    line-height: 1.25 !important;
+  }
+  .hotspot-summary-card {
+    padding: 0.65rem 0.7rem !important;
+    box-sizing: border-box !important;
+  }
+  .hotspot-sum-stat {
+    flex-wrap: wrap !important;
+    gap: 0.25rem !important;
+  }
+  .sum-desc {
+    font-size: 0.7rem !important;
+    word-break: break-word !important;
+  }
+  .sum-legend {
+    flex-wrap: wrap !important;
+    gap: 0.3rem !important;
+    font-size: 0.65rem !important;
+  }
+
+  /* DISTRICT FILTER TABS MOBILE */
+  .district-filter-tabs {
+    display: flex !important;
+    width: 100% !important;
+    gap: 0.35rem !important;
+  }
+  .d-tab-btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    text-align: center !important;
+    font-size: 0.7rem !important;
+    padding: 0.4rem 0.25rem !important;
+  }
+
+  /* DETAILED TABLE MOBILE */
+  .panel-table {
+    padding: 0.85rem 0.75rem !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+  .panel-table .panel-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.4rem !important;
+  }
+  .badge-secure-data {
+    font-size: 0.65rem !important;
+    align-self: flex-start !important;
+  }
+  .table-responsive {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .glass-table {
+    min-width: 580px !important;
+    font-size: 0.73rem !important;
+  }
+  .glass-table th, .glass-table td {
+    padding: 0.45rem 0.55rem !important;
+  }
+
   .guidance-grid {
     grid-template-columns: 1fr;
     gap: 0.75rem;
@@ -2074,7 +2311,10 @@ body {
     display: none;
   }
   .kpi-number {
-    font-size: 1.15rem;
+    font-size: 1.05rem !important;
+  }
+  .sum-num {
+    font-size: 1.25rem !important;
   }
   .sidebar-toggle-btn {
     left: 85vw;
@@ -2146,6 +2386,12 @@ body {
 [data-theme="light"] .user-name,
 .light-theme .user-name {
   color: #0f172a;
+}
+
+/* Hide GIS Sidebar and Toggle in Unauthenticated Guest Mode */
+body:not(.authenticated) #sidebar-toggle,
+body:not(.authenticated) #sidebar {
+  display: none !important;
 }
 
 [data-theme="light"] .sidebar,

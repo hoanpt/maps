@@ -259,6 +259,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     // 5. Cập nhật hiển thị lần đầu
     applyFilters();
+    
+    // 6. Đồng bộ ngầm dữ liệu Google Sheet 2026 của CDC Đà Nẵng (nếu có mạng)
+    if (window.cdcMacroService) {
+      setTimeout(() => {
+        window.cdcMacroService.syncLive(false).catch(e => console.warn("Background sync warning:", e));
+      }, 1000);
+    }
   } catch (err) {
     console.warn("Lỗi lọc dữ liệu ban đầu:", err);
   }
@@ -1084,6 +1091,25 @@ function applyFilters() {
 // CẬP NHẬT KPI SUMMARY CARDS
 // ============================================================================
 function updateKPICards() {
+  const isAuth = window.authService && window.authService.isAuthenticated();
+  const macro = window.CDC_2026_MACRO_DATA;
+
+  // Nếu ở chế độ khách và có dữ liệu chuẩn macro CDC 2026 từ Google Sheet
+  if (!isAuth && macro && macro.kpis && !state.isCustomExcelLoaded) {
+    const elTotal = document.getElementById("kpi-total");
+    const elSxh = document.getElementById("kpi-sxh");
+    const elTcm = document.getElementById("kpi-tcm");
+    const elSxhSub = document.getElementById("kpi-sxh-sub");
+    const elAlert = document.getElementById("kpi-alert");
+
+    if (elTotal) elTotal.innerText = (macro.kpis.totalCases2026 || 19739).toLocaleString('vi-VN');
+    if (elSxh) elSxh.innerText = (macro.kpis.sxh?.total2026 || 15020).toLocaleString('vi-VN');
+    if (elTcm) elTcm.innerText = (macro.kpis.tcm?.total2026 || 4719).toLocaleString('vi-VN');
+    if (elSxhSub) elSxhSub.innerText = `${macro.kpis.sxh?.odnTotal || 859} ổ dịch nhỏ (Tuần 48)`;
+    if (elAlert) elAlert.innerText = (macro.kpis.odnSummary?.total || 937).toLocaleString('vi-VN');
+    return;
+  }
+
   const cases = state.filteredCases;
   const total = cases.length;
 
@@ -1096,8 +1122,6 @@ function updateKPICards() {
     else if (c.grp === "TCM") tcm++;
     else if (c.grp === "CUM") cum++;
   });
-
-  const isAuth = window.authService && window.authService.isAuthenticated();
 
   const elTotal = document.getElementById("kpi-total");
   const elSxh = document.getElementById("kpi-sxh");
@@ -1229,10 +1253,143 @@ function updateCharts() {
 }
 
 // ============================================================================
+// DỊCH VỤ ĐỒNG BỘ DỮ LIỆU DỊCH TỄ HỌC 2026 TỪ GOOGLE SHEET (CDC ĐÀ NẴNG)
+// ============================================================================
+const cdcMacroService = {
+  sheetId: "1lCHJzAgXeHj13K8avXetNlLKCmyCo_OHLNcPPh_bFRg",
+  isSyncing: false,
+  lastSyncTime: null,
+
+  getData() {
+    return window.CDC_2026_MACRO_DATA || null;
+  },
+
+  async syncLive(isManual = false) {
+    if (this.isSyncing) return;
+    this.isSyncing = true;
+    const btnText = document.getElementById("cdc-btn-sync-text");
+    const syncIcon = document.getElementById("cdc-sync-icon");
+    const statusLabel = document.getElementById("cdc-sync-status-label");
+
+    if (btnText) btnText.innerText = "Đang đồng bộ...";
+    if (syncIcon) syncIcon.classList.add("fa-spin");
+    if (statusLabel) statusLabel.innerText = "Đang kết nối Google Sheet CDC Đà Nẵng...";
+
+    try {
+      const url = `https://docs.google.com/spreadsheets/d/${this.sheetId}/gviz/tq?tqx=out:json&sheet=Table%202026`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("HTTP Status: " + res.status);
+      const text = await res.text();
+      const json = JSON.parse(text.replace(/^[^{]*\(/, "").replace(/\);?\s*$/, ""));
+
+      if (json && json.table && json.table.rows && json.table.rows.length > 5) {
+        this.parseAndUpdateTable2026(json.table.rows);
+        this.lastSyncTime = new Date();
+        const timeStr = this.lastSyncTime.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+        if (statusLabel) {
+          const kpis = window.CDC_2026_MACRO_DATA?.kpis;
+          statusLabel.innerText = `CDC 2026: Tuần 48 (${(kpis?.totalCases2026 || 19739).toLocaleString("vi-VN")} ca) • Đồng bộ lúc ${timeStr}`;
+        }
+        if (isManual) {
+          if (typeof showNotification === "function") {
+            showNotification("Đã đồng bộ thành công số liệu dịch tễ mới nhất từ Google Sheet!", "success");
+          }
+        }
+        updateGuestDashboard();
+      }
+    } catch (err) {
+      console.warn("Lỗi đồng bộ trực tuyến CDC Google Sheet:", err);
+      if (statusLabel) {
+        statusLabel.innerText = "Dữ liệu CDC 2026 (Tuần 48) • Chế độ ngoại tuyến sẵn sàng";
+      }
+      if (isManual) {
+        if (typeof showNotification === "function") {
+          showNotification("Chưa thể cập nhật qua Google Sheet, đang dùng số liệu chuẩn CDC lưu trữ.", "warning");
+        }
+      }
+    } finally {
+      this.isSyncing = false;
+      if (btnText) btnText.innerText = "Đồng Bộ Google Sheet";
+      if (syncIcon) syncIcon.classList.remove("fa-spin");
+    }
+  },
+
+  parseAndUpdateTable2026(rows) {
+    if (!window.CDC_2026_MACRO_DATA) return;
+    const kpis = window.CDC_2026_MACRO_DATA.kpis || {};
+
+    const parseNum = (val) => {
+      if (typeof val === "number") return val;
+      if (!val) return 0;
+      const clean = String(val).replace(/\./g, "").replace(/,/g, ".").trim();
+      return parseFloat(clean) || 0;
+    };
+
+    // Row 2: Ca SXH, Row 3: ODN SXH, Row 4: Ca TCM, Row 5: ODN TCM
+    const rowSxh = rows.find(r => r.c && r.c[1] && String(r.c[1].v).trim() === "Ca SXH");
+    const rowOdnSxh = rows.find(r => r.c && r.c[1] && String(r.c[1].v).trim() === "ODN SXH");
+    const rowTcm = rows.find(r => r.c && r.c[1] && String(r.c[1].v).trim() === "Ca TCM");
+    const rowOdnTcm = rows.find(r => r.c && r.c[1] && String(r.c[1].v).trim() === "ODN TCM");
+
+    if (rowSxh && rowSxh.c) {
+      if (rowSxh.c[2]) kpis.sxh.prevWeek = parseNum(rowSxh.c[2].v);
+      if (rowSxh.c[3]) kpis.sxh.thisWeek = parseNum(rowSxh.c[3].v);
+      if (rowSxh.c[4]) kpis.sxh.weekChange = String(rowSxh.c[4].v).trim();
+      if (rowSxh.c[5]) kpis.sxh.total2026 = parseNum(rowSxh.c[5].v);
+      if (rowSxh.c[6]) kpis.sxh.samePeriod2025 = parseNum(rowSxh.c[6].v);
+      if (rowSxh.c[7]) kpis.sxh.ratio2025 = String(rowSxh.c[7].v).trim();
+    }
+
+    if (rowOdnSxh && rowOdnSxh.c) {
+      if (rowOdnSxh.c[2]) kpis.sxh.odnPrevWeek = parseNum(rowOdnSxh.c[2].v);
+      if (rowOdnSxh.c[3]) kpis.sxh.odnThisWeek = parseNum(rowOdnSxh.c[3].v);
+      if (rowOdnSxh.c[4]) kpis.sxh.odnWeekChange = String(rowOdnSxh.c[4].v).trim();
+      if (rowOdnSxh.c[5]) kpis.sxh.odnTotal = parseNum(rowOdnSxh.c[5].v);
+      if (rowOdnSxh.c[6]) kpis.sxh.odn2025 = parseNum(rowOdnSxh.c[6].v);
+      if (rowOdnSxh.c[7]) kpis.sxh.odnRatio2025 = String(rowOdnSxh.c[7].v).trim();
+    }
+
+    if (rowTcm && rowTcm.c) {
+      if (rowTcm.c[2]) kpis.tcm.prevWeek = parseNum(rowTcm.c[2].v);
+      if (rowTcm.c[3]) kpis.tcm.thisWeek = parseNum(rowTcm.c[3].v);
+      if (rowTcm.c[4]) kpis.tcm.weekChange = String(rowTcm.c[4].v).trim();
+      if (rowTcm.c[5]) kpis.tcm.total2026 = parseNum(rowTcm.c[5].v);
+      if (rowTcm.c[6]) kpis.tcm.samePeriod2025 = parseNum(rowTcm.c[6].v);
+      if (rowTcm.c[7]) kpis.tcm.ratio2025 = String(rowTcm.c[7].v).trim();
+    }
+
+    if (rowOdnTcm && rowOdnTcm.c) {
+      if (rowOdnTcm.c[2]) kpis.tcm.odnPrevWeek = parseNum(rowOdnTcm.c[2].v);
+      if (rowOdnTcm.c[3]) kpis.tcm.odnThisWeek = parseNum(rowOdnTcm.c[3].v);
+      if (rowOdnTcm.c[4]) kpis.tcm.odnWeekChange = String(rowOdnTcm.c[4].v).trim();
+      if (rowOdnTcm.c[5]) kpis.tcm.odnTotal = parseNum(rowOdnTcm.c[5].v);
+      if (rowOdnTcm.c[6]) kpis.tcm.odn2025 = parseNum(rowOdnTcm.c[6].v);
+      if (rowOdnTcm.c[7]) kpis.tcm.odnRatio2025 = String(rowOdnTcm.c[7].v).trim();
+    }
+
+    kpis.totalCases2026 = (kpis.sxh.total2026 || 0) + (kpis.tcm.total2026 || 0);
+    kpis.totalThisWeek = (kpis.sxh.thisWeek || 0) + (kpis.tcm.thisWeek || 0);
+    kpis.odnSummary = {
+      total: (kpis.sxh.odnTotal || 0) + (kpis.tcm.odnTotal || 0),
+      thisWeek: (kpis.sxh.odnThisWeek || 0) + (kpis.tcm.odnThisWeek || 0)
+    };
+    if (kpis.totalPopulation > 0) {
+      kpis.incidenceRatePer100k = Number(((kpis.totalCases2026 / kpis.totalPopulation) * 100000).toFixed(1));
+    }
+  }
+};
+window.cdcMacroService = cdcMacroService;
+window.triggerCdcLiveSync = function(isManual) {
+  return cdcMacroService.syncLive(isManual);
+};
+
+// ============================================================================
 // BIỂU ĐỒ & BÁO CÁO DÀNH CHO GIAO DIỆN KHÁCH (GUEST OVERVIEW DASHBOARD)
 // ============================================================================
 function initGuestCharts() {
-  // Chart 1: Diễn tiến theo tháng (Combo Bar + Line Chart)
+  state.guestTrendMode = state.guestTrendMode || "week";
+
+  // Chart 1: Đường cong dịch tễ 52 tuần & diễn tiến theo tháng (Combo Bar + Line Chart)
   const ctxGuestTrend = document.getElementById("guest-chart-trend");
   if (ctxGuestTrend) {
     state.guestCharts.trend = new Chart(ctxGuestTrend, {
@@ -1242,34 +1399,48 @@ function initGuestCharts() {
         datasets: [
           {
             type: "bar",
-            label: "Sốt xuất huyết Dengue",
+            label: "Sốt xuất huyết (2026)",
             data: [],
-            backgroundColor: "rgba(249, 115, 22, 0.8)",
+            backgroundColor: "rgba(249, 115, 22, 0.85)",
             borderColor: "#f97316",
             borderWidth: 1,
-            borderRadius: 4,
-            order: 2
-          },
-          {
-            type: "bar",
-            label: "Bệnh truyền nhiễm khác",
-            data: [],
-            backgroundColor: "rgba(6, 182, 212, 0.65)",
-            borderColor: "#06b6d4",
-            borderWidth: 1,
-            borderRadius: 4,
+            borderRadius: 3,
             order: 3
           },
           {
-            type: "line",
-            label: "Tổng số ca mắc",
+            type: "bar",
+            label: "Tay chân miệng (2026)",
             data: [],
+            backgroundColor: "rgba(250, 204, 21, 0.85)",
             borderColor: "#facc15",
-            backgroundColor: "rgba(250, 204, 21, 0.15)",
+            borderWidth: 1,
+            borderRadius: 3,
+            order: 4
+          },
+          {
+            type: "line",
+            label: "SXH 2025 (Cùng kỳ)",
+            data: [],
+            borderColor: "#06b6d4",
+            backgroundColor: "transparent",
+            borderWidth: 2,
+            borderDash: [5, 4],
+            pointRadius: 2,
+            pointHoverRadius: 5,
+            tension: 0.3,
+            fill: false,
+            order: 2
+          },
+          {
+            type: "line",
+            label: "Tổng ca mắc 2026",
+            data: [],
+            borderColor: "#f59e0b",
+            backgroundColor: "rgba(245, 158, 11, 0.12)",
             borderWidth: 2.5,
             pointRadius: 3,
             pointHoverRadius: 6,
-            pointBackgroundColor: "#facc15",
+            pointBackgroundColor: "#f59e0b",
             tension: 0.3,
             fill: false,
             order: 1
@@ -1281,13 +1452,14 @@ function initGuestCharts() {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: false // Đã có custom legend pills ở trên
+            display: false // Sử dụng legend pills tùy biến phía trên
           },
           tooltip: {
             mode: "index",
             intersect: false,
             callbacks: {
               label: function(context) {
+                if (context.parsed.y === null || context.parsed.y === undefined) return "";
                 return ` ${context.dataset.label}: ${context.parsed.y.toLocaleString('vi-VN')} ca`;
               }
             }
@@ -1315,15 +1487,12 @@ function initGuestCharts() {
     state.guestCharts.disease = new Chart(ctxGuestDisease, {
       type: "doughnut",
       data: {
-        labels: ["Sốt xuất huyết", "Tay chân miệng", "Cúm mùa", "Bệnh Lao", "Sởi", "Bệnh khác"],
+        labels: ["Sốt xuất huyết Dengue", "Tay chân miệng (TCM)", "Bệnh khác"],
         datasets: [{
-          data: [0, 0, 0, 0, 0, 0],
+          data: [15020, 4719, 0],
           backgroundColor: [
             "#f97316", // SXH: Cam
             "#facc15", // TCM: Vàng chanh
-            "#06b6d4", // Cúm: Cyan
-            "#a855f7", // Lao: Tím
-            "#ef4444", // Sởi: Đỏ
             "#64748b"  // Khác: Xám
           ],
           borderColor: "#0f172a",
@@ -1376,12 +1545,6 @@ function initGuestCharts() {
             borderRadius: 3
           },
           {
-            label: "Cúm mùa",
-            data: [],
-            backgroundColor: "rgba(6, 182, 212, 0.85)",
-            borderRadius: 3
-          },
-          {
             label: "Bệnh khác",
             data: [],
             backgroundColor: "rgba(168, 85, 247, 0.85)",
@@ -1425,93 +1588,179 @@ function initGuestCharts() {
   }
 }
 
-function updateGuestDashboard() {
-  const isAuth = window.authService && window.authService.isAuthenticated();
-  const cases = (!isAuth) ? state.rawCases : (state.filteredCases || state.rawCases);
-  const total = cases.length;
+// Chuyển đổi chế độ xem Đường cong Dịch tễ (52 tuần vs Theo Tháng)
+window.setGuestTrendMode = function(mode) {
+  state.guestTrendMode = mode || "week";
+  const btnWeek = document.getElementById("btn-trend-week");
+  const btnMonth = document.getElementById("btn-trend-month");
+  if (btnWeek) btnWeek.classList.toggle("active", state.guestTrendMode === "week");
+  if (btnMonth) btnMonth.classList.toggle("active", state.guestTrendMode === "month");
 
-  let sxh = 0;
-  let tcm = 0;
-  let cum = 0;
-  let lao = 0;
-  let soi = 0;
-  let other = 0;
+  const titleEl = document.getElementById("guest-trend-title");
+  if (titleEl) {
+    titleEl.innerText = state.guestTrendMode === "week"
+      ? "Diễn Biến 52 Tuần Dịch Tễ Năm 2026 vs Cùng Kỳ 2025"
+      : "Diễn Biến Ca Mắc Theo Tháng (Năm 2026)";
+  }
+  updateGuestTrendChart(state.guestTrendMode);
+};
 
-  let stOutpatient = 0;
-  let stInpatient = 0;
-  let stDischarged = 0;
+function updateGuestTrendChart(mode = "week") {
+  if (!state.guestCharts || !state.guestCharts.trend) return;
+  const macro = window.CDC_2026_MACRO_DATA;
 
-  cases.forEach(c => {
-    // Phân loại nhóm bệnh
-    if (c.grp === "SXH") sxh++;
-    else if (c.grp === "TCM") tcm++;
-    else if (c.grp === "CUM") cum++;
-    else if (c.grp === "LAO") lao++;
-    else if (c.grp === "SOI") soi++;
-    else other++;
-
-    // Tình trạng điều trị
-    const st = c.st || "";
-    if (st.includes("ngoại trú")) stOutpatient++;
-    else if (st.includes("nội trú")) stInpatient++;
-    else if (st.includes("Ra viện") || st.includes("khỏi")) stDischarged++;
-    else stOutpatient++;
-  });
-
-  // Cập nhật số liệu các thẻ KPI Guest
-  const elTotal = document.getElementById("guest-kpi-total");
-  const elSxh = document.getElementById("guest-kpi-sxh");
-  const elTcm = document.getElementById("guest-kpi-tcm");
-  const elCum = document.getElementById("guest-kpi-cum");
-  const elOut = document.getElementById("guest-st-out");
-  const elIn = document.getElementById("guest-st-in");
-  const elDis = document.getElementById("guest-st-dis");
-
-  if (elTotal) elTotal.innerText = total.toLocaleString("vi-VN");
-  if (elSxh) elSxh.innerText = sxh.toLocaleString("vi-VN");
-  if (elTcm) elTcm.innerText = tcm.toLocaleString("vi-VN");
-  if (elCum) elCum.innerText = cum.toLocaleString("vi-VN");
-  if (elOut) elOut.innerText = stOutpatient.toLocaleString("vi-VN");
-  if (elIn) elIn.innerText = stInpatient.toLocaleString("vi-VN");
-  if (elDis) elDis.innerText = stDischarged.toLocaleString("vi-VN");
-
-  // 1. Cập nhật Biểu đồ Diễn biến theo tháng (Combo Bar + Line)
-  if (state.guestCharts && state.guestCharts.trend) {
+  if (mode === "week" && macro && macro.weeklyTrends) {
+    const wt = macro.weeklyTrends;
+    state.guestCharts.trend.data.labels = wt.map(w => w.week);
+    state.guestCharts.trend.data.datasets[0].data = wt.map(w => w.sxh_2026 || 0);
+    state.guestCharts.trend.data.datasets[1].data = wt.map(w => w.tcm_2026 || 0);
+    state.guestCharts.trend.data.datasets[2].data = wt.map(w => w.sxh_2025 || 0);
+    state.guestCharts.trend.data.datasets[3].data = wt.map(w => w.total_2026 || 0);
+    state.guestCharts.trend.update("none");
+  } else {
+    // Chế độ Tháng
     const sxhMap = {};
-    const otherMap = {};
+    const tcmMap = {};
     const totalMap = {};
     state.allMonths.forEach(m => {
       sxhMap[m] = 0;
-      otherMap[m] = 0;
+      tcmMap[m] = 0;
       totalMap[m] = 0;
     });
 
-    cases.forEach(c => {
+    state.rawCases.forEach(c => {
       if (c.dt && c.dt.length >= 7) {
         const m = c.dt.substring(0, 7);
         if (totalMap[m] !== undefined) {
           totalMap[m]++;
           if (c.grp === "SXH") sxhMap[m]++;
-          else otherMap[m]++;
+          else if (c.grp === "TCM") tcmMap[m]++;
         }
       }
     });
 
     state.guestCharts.trend.data.labels = state.allMonths.map(m => m.substring(5) + "/" + m.substring(2, 4));
     state.guestCharts.trend.data.datasets[0].data = state.allMonths.map(m => sxhMap[m]);
-    state.guestCharts.trend.data.datasets[1].data = state.allMonths.map(m => otherMap[m]);
-    state.guestCharts.trend.data.datasets[2].data = state.allMonths.map(m => totalMap[m]);
+    state.guestCharts.trend.data.datasets[1].data = state.allMonths.map(m => tcmMap[m]);
+    state.guestCharts.trend.data.datasets[2].data = state.allMonths.map(() => null);
+    state.guestCharts.trend.data.datasets[3].data = state.allMonths.map(m => totalMap[m]);
     state.guestCharts.trend.update("none");
   }
+}
 
-  // 2. Cập nhật Biểu đồ Cơ cấu bệnh (Doughnut)
+function updateGuestDashboard() {
+  const macro = window.CDC_2026_MACRO_DATA;
+  const isAuth = window.authService && window.authService.isAuthenticated();
+
+  // 1. NẾU CÓ DỮ LIỆU CHUẨN CDC 2026 TỪ GOOGLE SHEET VÀ CHƯA NẠP FILE RIÊNG
+  if (macro && macro.kpis && !state.isCustomExcelLoaded) {
+    const kpis = macro.kpis;
+    const elTotal = document.getElementById("guest-kpi-total");
+    const elW48Total = document.getElementById("guest-kpi-w48-total");
+    const elSxh = document.getElementById("guest-kpi-sxh");
+    const elW48Sxh = document.getElementById("guest-kpi-w48-sxh");
+    const elTcm = document.getElementById("guest-kpi-tcm");
+    const elW48Tcm = document.getElementById("guest-kpi-w48-tcm");
+    const elOdn = document.getElementById("guest-kpi-odn");
+    const elW48Odn = document.getElementById("guest-kpi-w48-odn");
+    const elRate = document.getElementById("guest-kpi-rate");
+    const elDeaths = document.getElementById("guest-kpi-deaths");
+
+    if (elTotal) elTotal.innerText = (kpis.totalCases2026 || 19739).toLocaleString("vi-VN");
+    if (elW48Total) elW48Total.innerText = (kpis.totalThisWeek || 2115).toLocaleString("vi-VN");
+    if (elSxh) elSxh.innerText = (kpis.sxh?.total2026 || 15020).toLocaleString("vi-VN");
+    if (elW48Sxh) elW48Sxh.innerText = (kpis.sxh?.thisWeek || 2078).toLocaleString("vi-VN");
+    if (elTcm) elTcm.innerText = (kpis.tcm?.total2026 || 4719).toLocaleString("vi-VN");
+    if (elW48Tcm) elW48Tcm.innerText = (kpis.tcm?.thisWeek || 37).toLocaleString("vi-VN");
+    if (elOdn) elOdn.innerText = (kpis.odnSummary?.total || 937).toLocaleString("vi-VN");
+    if (elW48Odn) elW48Odn.innerText = (kpis.odnSummary?.thisWeek || 55).toLocaleString("vi-VN");
+    if (elRate) elRate.innerText = (kpis.incidenceRatePer100k || 688.7).toLocaleString("vi-VN");
+    if (elDeaths) elDeaths.innerText = (kpis.totalDeaths || 0) + " ca (0,0%)";
+
+    // Cập nhật Biểu đồ Đường cong Dịch tễ
+    updateGuestTrendChart(state.guestTrendMode || "week");
+
+    // Cập nhật Biểu đồ Cơ cấu bệnh (SXH: 15.020, TCM: 4.719)
+    if (state.guestCharts && state.guestCharts.disease) {
+      state.guestCharts.disease.data.labels = ["Sốt xuất huyết Dengue", "Tay chân miệng (TCM)", "Bệnh khác"];
+      state.guestCharts.disease.data.datasets[0].data = [
+        kpis.sxh?.total2026 || 15020,
+        kpis.tcm?.total2026 || 4719,
+        0
+      ];
+      state.guestCharts.disease.update();
+    }
+
+    // Cập nhật Điểm Nóng Dịch Tễ Tuần 48
+    renderGuestHotspots(macro.hotspots);
+
+    // Cập nhật 15 Khu vực theo dữ liệu 94 Xã/Phường
+    updateGuestDistrictsAnalysisFromMacro(macro);
+    return;
+  }
+
+  // 2. FALLBACK CHO TRƯỜNG HỢP NẠP FILE EXCEL TÙY BIẾN
+  const cases = (!isAuth) ? state.rawCases : (state.filteredCases || state.rawCases);
+  const total = cases.length;
+
+  let sxh = 0;
+  let tcm = 0;
+  let cum = 0;
+  let other = 0;
+
+  cases.forEach(c => {
+    if (c.grp === "SXH") sxh++;
+    else if (c.grp === "TCM") tcm++;
+    else if (c.grp === "CUM") cum++;
+    else other++;
+  });
+
+  const elTotal = document.getElementById("guest-kpi-total");
+  const elSxh = document.getElementById("guest-kpi-sxh");
+  const elTcm = document.getElementById("guest-kpi-tcm");
+  if (elTotal) elTotal.innerText = total.toLocaleString("vi-VN");
+  if (elSxh) elSxh.innerText = sxh.toLocaleString("vi-VN");
+  if (elTcm) elTcm.innerText = tcm.toLocaleString("vi-VN");
+
+  updateGuestTrendChart("month");
+
   if (state.guestCharts && state.guestCharts.disease) {
-    state.guestCharts.disease.data.datasets[0].data = [sxh, tcm, cum, lao, soi, other];
+    state.guestCharts.disease.data.labels = ["Sốt xuất huyết Dengue", "Tay chân miệng (TCM)", "Bệnh khác"];
+    state.guestCharts.disease.data.datasets[0].data = [sxh, tcm, other];
     state.guestCharts.disease.update();
   }
 
-  // 3. Cập nhật Biểu đồ & Dữ liệu 15 Khu vực (Đà Nẵng & Vùng Mở rộng)
   updateGuestDistrictsAnalysis(cases, total);
+}
+
+function renderGuestHotspots(hotspots) {
+  if (!hotspots) return;
+  const listCases = document.getElementById("hotspot-list-cases");
+  const listRates = document.getElementById("hotspot-list-rates");
+
+  if (listCases && hotspots.sxhTopCases) {
+    listCases.innerHTML = hotspots.sxhTopCases.slice(0, 5).map((item, idx) => `
+      <div class="hotspot-item">
+        <span class="hotspot-rank rank-${idx + 1}">${idx + 1}</span>
+        <div class="hotspot-info">
+          <div class="hotspot-name">${item.ward} <span class="hotspot-district">${item.district}</span></div>
+          <div class="hotspot-metric"><b style="color:#ef4444;">${item.cases} ca</b> mới • Tỷ lệ: ${item.rate.toLocaleString("vi-VN")} /100k</div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  if (listRates && hotspots.sxhTopRates) {
+    listRates.innerHTML = hotspots.sxhTopRates.slice(0, 5).map((item, idx) => `
+      <div class="hotspot-item">
+        <span class="hotspot-rank rank-${idx + 1}">${idx + 1}</span>
+        <div class="hotspot-info">
+          <div class="hotspot-name">${item.ward} <span class="hotspot-district">${item.district}</span></div>
+          <div class="hotspot-metric"><b style="color:#38bdf8;">${item.rate.toLocaleString("vi-VN")}</b> /100k • ${item.cases} ca tích lũy</div>
+        </div>
+      </div>
+    `).join("");
+  }
 }
 
 // ============================================================================
@@ -1641,6 +1890,60 @@ const EPIDEMIOLOGY_REGIONS = [
 ];
 window.EPIDEMIOLOGY_REGIONS = EPIDEMIOLOGY_REGIONS;
 
+function mapWardDistrictToRegionId(districtStr) {
+  const d = (districtStr || "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (/hải châu/i.test(d)) return "haichau";
+  if (/thanh khê/i.test(d)) return "thanhkhe";
+  if (/sơn trà/i.test(d)) return "sontra";
+  if (/ngũ hành sơn/i.test(d)) return "nguhanhson";
+  if (/liên chiểu/i.test(d)) return "lienchieu";
+  if (/cẩm\s*lệ/i.test(d)) return "camle";
+  if (/hòa vang/i.test(d)) return "hoavang";
+  if (/điện bàn/i.test(d)) return "dienban";
+  if (/hội an/i.test(d)) return "hoian";
+  if (/duy xuyên/i.test(d)) return "duyxuyen";
+  if (/thăng bình/i.test(d)) return "thangbinh";
+  if (/tam kỳ|núi thành|phú ninh/i.test(d)) return "tamky_nuithanh";
+  if (/quế sơn|nông sơn/i.test(d)) return "queson";
+  if (/đại lộc/i.test(d)) return "dailoc";
+  return "other_expanded";
+}
+
+function updateGuestDistrictsAnalysisFromMacro(macro) {
+  const stats = EPIDEMIOLOGY_REGIONS.map(r => ({
+    id: r.id,
+    name: r.name,
+    shortName: r.shortName,
+    type: r.type,
+    badgeText: r.badgeText,
+    sxh: 0,
+    tcm: 0,
+    cum: 0,
+    other: 0,
+    total: 0,
+    pop: 0
+  }));
+
+  const statsMap = {};
+  stats.forEach(st => statsMap[st.id] = st);
+
+  const wards = macro.wards || [];
+  wards.forEach(w => {
+    const regId = mapWardDistrictToRegionId(w.district);
+    const target = statsMap[regId] || statsMap["other_expanded"];
+    if (target) {
+      target.sxh += (w.sxh_cum || 0);
+      target.tcm += (w.tcm_cum || 0);
+      target.total += (w.total_cum || 0);
+      target.pop += (w.pop || 0);
+    }
+  });
+
+  state.guestRegionStats = stats;
+  state.guestTotalCases = macro.kpis?.totalCases2026 || 19739;
+  renderGuestDistrictsView();
+}
+
 function updateGuestDistrictsAnalysis(cases, total) {
   const stats = EPIDEMIOLOGY_REGIONS.map(r => ({
     id: r.id,
@@ -1653,7 +1956,8 @@ function updateGuestDistrictsAnalysis(cases, total) {
     tcm: 0,
     cum: 0,
     other: 0,
-    total: 0
+    total: 0,
+    pop: 0
   }));
 
   const otherRegionIndex = stats.length - 1;
@@ -1718,8 +2022,7 @@ function renderGuestDistrictsView() {
     state.guestCharts.districts.data.labels = filtered.map(d => d.shortName);
     state.guestCharts.districts.data.datasets[0].data = filtered.map(d => d.sxh);
     state.guestCharts.districts.data.datasets[1].data = filtered.map(d => d.tcm);
-    state.guestCharts.districts.data.datasets[2].data = filtered.map(d => d.cum);
-    state.guestCharts.districts.data.datasets[3].data = filtered.map(d => d.other);
+    state.guestCharts.districts.data.datasets[2].data = filtered.map(d => d.other || 0);
     state.guestCharts.districts.update("none");
   }
 
@@ -1761,6 +2064,7 @@ function renderGuestRiskTiles(stats) {
     }
 
     const pctBar = Math.min(100, Math.max(12, Math.round((st.total / maxCases) * 100)));
+    const rateText = st.pop > 0 ? ((st.total / st.pop) * 100000).toFixed(1) + " /100k" : "";
     const typeBadge = st.type === "central" 
       ? '<span style="font-size:0.65rem; padding:0.1rem 0.35rem; border-radius:4px; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); margin-left:0.35rem;">Trung tâm</span>'
       : '<span style="font-size:0.65rem; padding:0.1rem 0.35rem; border-radius:4px; background:rgba(168,85,247,0.15); color:#c084fc; border:1px solid rgba(168,85,247,0.3); margin-left:0.35rem;">Mở rộng</span>';
@@ -1774,11 +2078,11 @@ function renderGuestRiskTiles(stats) {
           </div>
           <span class="d-badge ${badgeClass}" style="font-size:0.68rem; padding:0.15rem 0.45rem;">${badgeText}</span>
         </div>
-        <div class="d-numbers" style="display:flex; justify-content:space-between; font-size:0.75rem; margin-top:0.15rem;">
-          <div><b style="font-size:0.88rem;">${st.total.toLocaleString('vi-VN')}</b> ca bệnh</div>
+        <div class="d-numbers" style="display:flex; justify-content:space-between; font-size:0.75rem; margin-top:0.25rem;">
+          <div><b style="font-size:0.88rem;">${st.total.toLocaleString('vi-VN')}</b> ca bệnh ${rateText ? `<small style="color:var(--text-dim); margin-left:4px;">(${rateText})</small>` : ''}</div>
           <div class="d-sub" style="font-size:0.7rem;">SXH: <b style="color:var(--accent-orange);">${st.sxh.toLocaleString('vi-VN')}</b> | TCM: <b class="val-tcm" style="color:var(--accent-yellow);">${st.tcm.toLocaleString('vi-VN')}</b></div>
         </div>
-        <div class="d-bar" style="height:5px; border-radius:3px; overflow:hidden; margin-top:0.2rem;">
+        <div class="d-bar" style="height:5px; border-radius:3px; overflow:hidden; margin-top:0.25rem;">
           <div style="width:${pctBar}%; height:100%; background:${barColor}; border-radius:3px;"></div>
         </div>
       </div>
@@ -1834,8 +2138,8 @@ function renderGuestDistrictTable(stats, total) {
         <td style="text-align:center;">${typeBadge}</td>
         <td class="td-sxh" style="text-align:right; color:var(--accent-orange); font-weight:600;">${st.sxh.toLocaleString('vi-VN')}</td>
         <td class="td-tcm" style="text-align:right; color:var(--accent-yellow); font-weight:600;">${st.tcm.toLocaleString('vi-VN')}</td>
-        <td class="td-cum" style="text-align:right; color:var(--accent-cyan);">${st.cum.toLocaleString('vi-VN')}</td>
-        <td class="td-other" style="text-align:right; color:var(--accent-purple);">${st.other.toLocaleString('vi-VN')}</td>
+        <td class="td-cum" style="text-align:right; color:var(--accent-cyan);">${(st.cum || 0).toLocaleString('vi-VN')}</td>
+        <td class="td-other" style="text-align:right; color:var(--accent-purple);">${(st.other || 0).toLocaleString('vi-VN')}</td>
         <td class="td-total-cases" style="text-align:right; font-weight:700;">${st.total.toLocaleString('vi-VN')}</td>
         <td style="text-align:center;">
           <div style="display:flex; align-items:center; gap:6px; justify-content:center;">

@@ -615,15 +615,28 @@
             <div class="hero-glow-blob"></div>
             <div class="hero-left">
               <div class="hero-badge">
-                <span class="live-dot"></span> BÁO CÁO DỊCH TỄ HỌC TP. ĐÀ NẴNG & ĐỊA BÀN MỞ RỘNG (GIAI ĐOẠN 2025 - 2026)
+                <span class="live-dot"></span> BÁO CÁO DỊCH TỄ HỌC TP. ĐÀ NẴNG 2026 • 94 XÃ/PHƯỜNG MỞ RỘNG & SÁP NHẬP
               </div>
               <h2 class="hero-title">
                 TRUNG TÂM GIÁM SÁT & DỰ BÁO DỊCH BỆNH TRUYỀN NHIỄM
               </h2>
               <p class="hero-desc">
                 Hệ thống phân tích dịch tễ học và giám sát ổ dịch thời gian thực của <b>CDC Đà Nẵng</b>. 
-                Số liệu ca bệnh được tổng hợp tự động từ 94 trạm y tế trên toàn địa bàn thành phố và các khu vực liên kết dịch tễ mở rộng (Điện Bàn, Hội An, Duy Xuyên, Thăng Bình, Tam Kỳ, Núi Thành, Đại Lộc...).
+                Số liệu ca bệnh được đồng bộ trực tuyến tự động từ Google Sheet điều hành của 94 trạm y tế trên toàn địa bàn thành phố và các khu vực liên kết dịch tễ mở rộng (Điện Bàn, Hội An, Duy Xuyên, Thăng Bình, Tam Kỳ, Núi Thành, Đại Lộc...).
               </p>
+              
+              <!-- THANH TRẠNG THÁI ĐỒNG BỘ TRỰC TUYẾN GOOGLE SHEET -->
+              <div class="cdc-live-sync-bar">
+                <div class="sync-status-indicator">
+                  <span class="sync-pulse-dot"></span>
+                  <span id="cdc-sync-status-label">Dữ liệu CDC 2026: Tuần 48 (19.739 ca) • Đã kết nối Google Sheet</span>
+                </div>
+                <button id="btn-manual-cdc-sync" type="button" class="btn-sync-action" onclick="triggerCdcLiveSync(true)" title="Cập nhật số liệu mới nhất trực tiếp từ Google Sheet CDC Đà Nẵng">
+                  <i class="fa-solid fa-arrows-rotate" id="cdc-sync-icon"></i>
+                  <span id="cdc-btn-sync-text">Đồng Bộ Google Sheet</span>
+                </button>
+              </div>
+
               <div class="hero-security-pill">
                 <i class="fa-solid fa-shield-halved" style="color:var(--accent-cyan);"></i>
                 <span>Chế độ thống kê công khai • Bản đồ GIS chi tiết & điều tra thực địa yêu cầu đăng nhập</span>
@@ -651,17 +664,20 @@
             </div>
           </div>
 
-          <!-- 5 THẺ CHỈ SỐ KPI NEON GLASSMORPHISM -->
+          <!-- 5 THẺ CHỈ SỐ KPI NEON GLASSMORPHISM (SỐ LIỆU 2026 TỔNG HỢP GOOGLE SHEET) -->
           <div class="guest-kpi-grid">
             <div class="kpi-glass-card kpi-glow-cyan">
               <div class="kpi-icon-box cyan-glow">
                 <i class="fa-solid fa-viruses"></i>
               </div>
               <div class="kpi-meta">
-                <span class="kpi-title">TỔNG CA DỊCH BỆNH</span>
-                <span id="guest-kpi-total" class="kpi-number">23.209</span>
+                <span class="kpi-title">TỔNG CA DỊCH BỆNH (2026)</span>
+                <span id="guest-kpi-total" class="kpi-number">19.739</span>
+                <div class="kpi-sub-line">
+                  <i class="fa-solid fa-calendar-check" style="color:var(--accent-cyan);"></i> Tuần 48: <b id="guest-kpi-w48-total">2.115</b> ca
+                </div>
                 <span id="guest-kpi-area-desc" class="kpi-trend trend-cyan">
-                  <i class="fa-solid fa-map-location-dot"></i> Toàn địa bàn & Mở rộng (94 TYT)
+                  <i class="fa-solid fa-map-location-dot"></i> 94 Xã/Phường • 2.866.101 dân
                 </span>
               </div>
             </div>
@@ -672,9 +688,12 @@
               </div>
               <div class="kpi-meta">
                 <span class="kpi-title">SỐT XUẤT HUYẾT DENGUE</span>
-                <span id="guest-kpi-sxh" class="kpi-number" style="color:#fb923c;">11.881</span>
-                <span class="kpi-trend trend-orange">
-                  <i class="fa-solid fa-triangle-exclamation"></i> 51.2% - Bệnh trọng điểm
+                <span id="guest-kpi-sxh" class="kpi-number" style="color:#fb923c;">15.020</span>
+                <div class="kpi-sub-line">
+                  <i class="fa-solid fa-arrow-trend-down" style="color:#10b981;"></i> Tuần 48: <b id="guest-kpi-w48-sxh">2.078</b> ca (-6%)
+                </div>
+                <span class="kpi-trend trend-orange" id="guest-kpi-sxh-trend" title="So với 3.579 ca cùng kỳ 2025">
+                  <i class="fa-solid fa-arrow-trend-up"></i> Gấp 4,2 lần cùng kỳ 2025
                 </span>
               </div>
             </div>
@@ -685,58 +704,74 @@
               </div>
               <div class="kpi-meta">
                 <span class="kpi-title">TAY CHÂN MIỆNG (TCM)</span>
-                <span id="guest-kpi-tcm" class="kpi-number" style="color:#fde047;">5.364</span>
-                <span class="kpi-trend trend-yellow">
-                  <i class="fa-solid fa-children"></i> 23.1% - Trẻ mầm non
-                </span>
-              </div>
-            </div>
-
-            <div class="kpi-glass-card kpi-glow-emerald">
-              <div class="kpi-icon-box emerald-glow">
-                <i class="fa-solid fa-lungs-virus"></i>
-              </div>
-              <div class="kpi-meta">
-                <span class="kpi-title">CÚM MÙA & HÔ HẤP</span>
-                <span id="guest-kpi-cum" class="kpi-number" style="color:#34d399;">3.047</span>
-                <span class="kpi-trend trend-emerald">
-                  <i class="fa-solid fa-virus"></i> 13.1% - Hội chứng cúm
+                <span id="guest-kpi-tcm" class="kpi-number" style="color:#fde047;">4.719</span>
+                <div class="kpi-sub-line">
+                  <i class="fa-solid fa-arrow-trend-down" style="color:#10b981;"></i> Tuần 48: <b id="guest-kpi-w48-tcm">37</b> ca (-16%)
+                </div>
+                <span class="kpi-trend trend-yellow" id="guest-kpi-tcm-trend" title="So với 1.948 ca cùng kỳ 2025">
+                  <i class="fa-solid fa-arrow-trend-up"></i> Gấp 2,4 lần cùng kỳ 2025
                 </span>
               </div>
             </div>
 
             <div class="kpi-glass-card kpi-glow-purple">
               <div class="kpi-icon-box purple-glow">
-                <i class="fa-solid fa-heart-pulse"></i>
+                <i class="fa-solid fa-fire-flame-curved"></i>
               </div>
               <div class="kpi-meta">
-                <span class="kpi-title">TÌNH TRẠNG ĐIỀU TRỊ</span>
-                <div class="kpi-sub-stats">
-                  <div><span>Ngoại trú:</span> <b id="guest-st-out">15.867</b></div>
-                  <div><span>Nội trú:</span> <b id="guest-st-in">5.293</b></div>
-                  <div><span>Ra viện:</span> <b id="guest-st-dis" style="color:#34d399;">2.049</b></div>
+                <span class="kpi-title">Ổ DỊCH NHỎ (ODN)</span>
+                <span id="guest-kpi-odn" class="kpi-number" style="color:#f43f5e;">937</span>
+                <div class="kpi-sub-line">
+                  <i class="fa-solid fa-circle-exclamation" style="color:#f43f5e;"></i> Tuần 48: <b id="guest-kpi-w48-odn">55</b> ổ mới (54 SXH)
                 </div>
-                <span class="kpi-trend trend-green">
-                  <i class="fa-solid fa-circle-check"></i> 92.4% phục hồi tốt
+                <span class="kpi-trend trend-purple" id="guest-kpi-odn-trend">
+                  <i class="fa-solid fa-shield-virus"></i> SXH 859 ổ (Gấp 5,1 lần 2025)
+                </span>
+              </div>
+            </div>
+
+            <div class="kpi-glass-card kpi-glow-emerald">
+              <div class="kpi-icon-box emerald-glow">
+                <i class="fa-solid fa-chart-line-up"></i>
+              </div>
+              <div class="kpi-meta">
+                <span class="kpi-title">TỶ LỆ MẮC & TỬ VONG</span>
+                <span id="guest-kpi-rate" class="kpi-number" style="color:#34d399;">688.7</span>
+                <div class="kpi-sub-line">
+                  <i class="fa-solid fa-shield-heart" style="color:#10b981;"></i> Tử vong: <b id="guest-kpi-deaths" style="color:#10b981;">0 ca (0,0%)</b>
+                </div>
+                <span class="kpi-trend trend-emerald">
+                  <i class="fa-solid fa-user-check"></i> SXH: 524,1 • TCM: 164,6 /100k
                 </span>
               </div>
             </div>
           </div>
 
-          <!-- HÀNG BIỂU ĐỒ TÌNH HÌNH DỊCH 1: DIỄN TIẾN THEO THÁNG & CƠ CẤU BỆNH -->
+          <!-- HÀNG BIỂU ĐỒ TÌNH HÌNH DỊCH 1: ĐƯỜNG CONG DỊCH TỄ 52 TUẦN & CƠ CẤU BỆNH -->
           <div class="charts-primary-row">
             
-            <!-- BIỂU ĐỒ DIỄN TIẾN CA BỆNH THEO THÁNG -->
+            <!-- BIỂU ĐỒ ĐƯỜNG CONG DỊCH TỄ 52 TUẦN (EPIDEMIC CURVE) -->
             <div class="chart-glass-panel panel-trend">
-              <div class="panel-header">
+              <div class="panel-header" style="flex-wrap:wrap; gap:0.6rem;">
                 <div>
-                  <div class="panel-tag"><i class="fa-solid fa-chart-line"></i> DIỄN BIẾN THỜI GIAN</div>
-                  <h3 class="panel-title">Tình Hình Ca Mắc Theo Tháng Tại TP. Đà Nẵng</h3>
+                  <div class="panel-tag"><i class="fa-solid fa-chart-line"></i> ĐƯỜNG CONG DỊCH TỄ (EPIDEMIC CURVE)</div>
+                  <h3 class="panel-title" id="guest-trend-title">Diễn Biến 52 Tuần Dịch Tễ Năm 2026 vs Cùng Kỳ 2025</h3>
                 </div>
-                <div class="legend-pills">
-                  <span class="pill-sxh"><span class="pill-dot"></span> Sốt xuất huyết</span>
-                  <span class="pill-other"><span class="pill-dot"></span> Bệnh khác</span>
-                  <span class="pill-total"><span class="pill-line"></span> Tổng ca</span>
+                <div class="trend-controls-bar">
+                  <div class="view-mode-pills">
+                    <button type="button" id="btn-trend-week" class="trend-tab-btn active" onclick="setGuestTrendMode('week')">
+                      <i class="fa-solid fa-calendar-week"></i> 52 Tuần Dịch Tễ
+                    </button>
+                    <button type="button" id="btn-trend-month" class="trend-tab-btn" onclick="setGuestTrendMode('month')">
+                      <i class="fa-solid fa-calendar-days"></i> Theo Tháng
+                    </button>
+                  </div>
+                  <div class="legend-pills" id="guest-trend-legends">
+                    <span class="pill-sxh"><span class="pill-dot"></span> SXH 2026</span>
+                    <span class="pill-tcm"><span class="pill-dot"></span> TCM 2026</span>
+                    <span class="pill-2025"><span class="pill-line-dash"></span> SXH 2025 (Cùng kỳ)</span>
+                    <span class="pill-total"><span class="pill-line"></span> Tổng ca 2026</span>
+                  </div>
                 </div>
               </div>
               <div class="panel-body chart-container-trend">
@@ -748,16 +783,163 @@
             <div class="chart-glass-panel panel-disease">
               <div class="panel-header">
                 <div>
-                  <div class="panel-tag"><i class="fa-solid fa-chart-pie"></i> CƠ CẤU BỆNH TẬT</div>
-                  <h3 class="panel-title">Tỉ Lệ Các Nhóm Dịch Bệnh</h3>
+                  <div class="panel-tag"><i class="fa-solid fa-chart-pie"></i> CƠ CẤU DỊCH BỆNH 2026</div>
+                  <h3 class="panel-title">Tỉ Lệ Mắc SXH & Tay Chân Miệng</h3>
                 </div>
-                <span class="badge-accent">Toàn Thành Phố</span>
+                <span class="badge-accent">CDC Đà Nẵng</span>
               </div>
               <div class="panel-body chart-container-disease">
                 <canvas id="guest-chart-disease"></canvas>
               </div>
             </div>
 
+          </div>
+
+          <!-- TIÊU ĐIỂM DỊCH TỄ TUẦN 48 & ĐIỂM NÓNG XÃ/PHƯỜNG (EPIDEMIOLOGICAL HOTSPOTS) -->
+          <div class="chart-glass-panel panel-hotspots">
+            <div class="panel-header">
+              <div>
+                <div class="panel-tag"><i class="fa-solid fa-fire-flame-curved" style="color:#ef4444;"></i> GIÁM SÁT TRỌNG ĐIỂM TUẦN 48</div>
+                <h3 class="panel-title">Tiêu Điểm Điểm Nóng Dịch Bệnh Tại Các Xã / Phường (Năm 2026)</h3>
+              </div>
+              <span class="badge-live-pulse"><i class="fa-solid fa-circle-dot"></i> Dữ Liệu Thực Tế CDC</span>
+            </div>
+            <div class="panel-body">
+              <div class="hotspots-grid">
+                
+                <!-- Cột 1: Top Ca Mắc Mới Tuần 48 (SXH) -->
+                <div class="hotspot-column-card">
+                  <div class="hotspot-col-header">
+                    <i class="fa-solid fa-mosquito" style="color:#fb923c;"></i>
+                    <span>Top 5 Xã/Phường Ca Mắc Mới Cao Nhất (Tuần 48)</span>
+                  </div>
+                  <div class="hotspot-list" id="hotspot-list-cases">
+                    <div class="hotspot-item">
+                      <span class="hotspot-rank rank-1">1</span>
+                      <div class="hotspot-info">
+                        <div class="hotspot-name">Phường Ngũ Hành Sơn <span class="hotspot-district">Quận Ngũ Hành Sơn</span></div>
+                        <div class="hotspot-metric"><b style="color:#ef4444;">204 ca</b> mới • Tỷ lệ tích lũy: 1.406,2 /100k</div>
+                      </div>
+                    </div>
+                    <div class="hotspot-item">
+                      <span class="hotspot-rank rank-2">2</span>
+                      <div class="hotspot-info">
+                        <div class="hotspot-name">Phường Điện Bàn Đông <span class="hotspot-district">Thị xã Điện Bàn</span></div>
+                        <div class="hotspot-metric"><b style="color:#fb923c;">126 ca</b> mới • Tỷ lệ tích lũy: 918,2 /100k</div>
+                      </div>
+                    </div>
+                    <div class="hotspot-item">
+                      <span class="hotspot-rank rank-3">3</span>
+                      <div class="hotspot-info">
+                        <div class="hotspot-name">Xã Thăng Bình <span class="hotspot-district">Huyện Thăng Bình</span></div>
+                        <div class="hotspot-metric"><b style="color:#fb923c;">106 ca</b> mới • Tỷ lệ tích lũy: 1.213,0 /100k</div>
+                      </div>
+                    </div>
+                    <div class="hotspot-item">
+                      <span class="hotspot-rank">4</span>
+                      <div class="hotspot-info">
+                        <div class="hotspot-name">Phường An Khê <span class="hotspot-district">Quận Thanh Khê</span></div>
+                        <div class="hotspot-metric"><b>103 ca</b> mới • Tỷ lệ tích lũy: 947,5 /100k</div>
+                      </div>
+                    </div>
+                    <div class="hotspot-item">
+                      <span class="hotspot-rank">5</span>
+                      <div class="hotspot-info">
+                        <div class="hotspot-name">Phường Sơn Trà <span class="hotspot-district">Quận Sơn Trà</span></div>
+                        <div class="hotspot-metric"><b>93 ca</b> mới • Tỷ lệ tích lũy: 944,0 /100k</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Cột 2: Top Tỷ Lệ Mắc / 100k Dân -->
+                <div class="hotspot-column-card">
+                  <div class="hotspot-col-header">
+                    <i class="fa-solid fa-chart-column" style="color:#38bdf8;"></i>
+                    <span>Top 5 Xã/Phường Tỷ Lệ Mắc / 100.000 Dân Cao Nhất</span>
+                  </div>
+                  <div class="hotspot-list" id="hotspot-list-rates">
+                    <div class="hotspot-item">
+                      <span class="hotspot-rank rank-1">1</span>
+                      <div class="hotspot-info">
+                        <div class="hotspot-name">Xã Khâm Đức <span class="hotspot-district">Huyện Phước Sơn</span></div>
+                        <div class="hotspot-metric"><b style="color:#ef4444;">1.951,8</b> /100k • 183 ca / 9.376 dân</div>
+                      </div>
+                    </div>
+                    <div class="hotspot-item">
+                      <span class="hotspot-rank rank-2">2</span>
+                      <div class="hotspot-info">
+                        <div class="hotspot-name">Phường Điện Bàn Bắc <span class="hotspot-district">Thị xã Điện Bàn</span></div>
+                        <div class="hotspot-metric"><b style="color:#ef4444;">1.803,0</b> /100k • 612 ca / 33.943 dân</div>
+                      </div>
+                    </div>
+                    <div class="hotspot-item">
+                      <span class="hotspot-rank rank-3">3</span>
+                      <div class="hotspot-info">
+                        <div class="hotspot-name">Phường Ngũ Hành Sơn <span class="hotspot-district">Quận Ngũ Hành Sơn</span></div>
+                        <div class="hotspot-metric"><b style="color:#fb923c;">1.406,2</b> /100k • 1.567 ca / 111.435 dân</div>
+                      </div>
+                    </div>
+                    <div class="hotspot-item">
+                      <span class="hotspot-rank">4</span>
+                      <div class="hotspot-info">
+                        <div class="hotspot-name">Xã Thăng Bình <span class="hotspot-district">Huyện Thăng Bình</span></div>
+                        <div class="hotspot-metric"><b>1.213,0</b> /100k • 648 ca / 53.421 dân</div>
+                      </div>
+                    </div>
+                    <div class="hotspot-item">
+                      <span class="hotspot-rank">5</span>
+                      <div class="hotspot-info">
+                        <div class="hotspot-name">Xã Duy Xuyên <span class="hotspot-district">Huyện Duy Xuyên</span></div>
+                        <div class="hotspot-metric"><b>1.187,0</b> /100k • 598 ca / 50.379 dân</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Cột 3: Giám sát Ổ dịch nhỏ & TCM -->
+                <div class="hotspot-column-card">
+                  <div class="hotspot-col-header">
+                    <i class="fa-solid fa-triangle-exclamation" style="color:#eab308;"></i>
+                    <span>Giám Sát Ổ Dịch Nhỏ & Bệnh Trẻ Em (TCM)</span>
+                  </div>
+                  <div class="hotspot-list">
+                    <div class="hotspot-summary-card">
+                      <div class="hotspot-sum-title">TỔNG SỐ Ổ DỊCH NHỎ ĐÃ XỬ LÝ (2026)</div>
+                      <div class="hotspot-sum-stat">
+                        <span class="sum-num" style="color:#ef4444;">937</span>
+                        <span class="sum-desc">ổ dịch (SXH: <b>859</b>, TCM: <b>78</b>)</span>
+                      </div>
+                      <div class="hotspot-sum-bar">
+                        <div class="bar-fill sxh" style="width:91.7%;"></div>
+                        <div class="bar-fill tcm" style="width:8.3%;"></div>
+                      </div>
+                      <div class="sum-legend">
+                        <span><span class="dot-sxh"></span> SXH: 859 ổ (+5,1 lần 2025)</span>
+                        <span><span class="dot-tcm"></span> TCM: 78 ổ</span>
+                      </div>
+                    </div>
+
+                    <div class="hotspot-item" style="margin-top:0.45rem;">
+                      <span class="hotspot-rank" style="background:#ca8a04; color:#fff;">TCM</span>
+                      <div class="hotspot-info">
+                        <div class="hotspot-name">Phường Sơn Trà, Thanh Khê, Ngũ Hành Sơn, Liên Chiểu</div>
+                        <div class="hotspot-metric">Ghi nhận rải rác 3-4 ca TCM/tuần • Tập trung lứa tuổi mầm non</div>
+                      </div>
+                    </div>
+
+                    <div class="hotspot-item">
+                      <span class="hotspot-rank" style="background:#059669; color:#fff;">0 CA</span>
+                      <div class="hotspot-info">
+                        <div class="hotspot-name">Chỉ số an toàn: Không ghi nhận ca tử vong</div>
+                        <div class="hotspot-metric" style="color:#10b981;">100% bệnh nhân được thu dung, phân luồng điều trị kịp thời</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
           </div>
 
           <!-- HÀNG BIỂU ĐỒ TÌNH HÌNH DỊCH 2: SO SÁNH ĐỊA BÀN & PHÂN VÙNG NGUY CƠ -->
@@ -1406,9 +1588,10 @@
   <script src="danang_districts.js?v=3.2.0"></script>
   <script src="danang_facilities.js?v=3.2.0"></script>
   <script src="data_epidemiology.js?v=3.2.0"></script>
+  <script src="data_cdc_2026_macro.js?v=3.5.0"></script>
 
   <!-- 8. CORE APPLICATION LOGIC -->
-  <script src="app.js?v=3.4.0"></script>
+  <script src="app.js?v=3.5.0"></script>
 
 </body>
 </html>

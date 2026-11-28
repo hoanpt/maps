@@ -403,6 +403,18 @@
         <span id="theme-toggle-text">Giao Diện Tối</span>
       </button>
 
+      <!-- Thanh Chuyển đổi Góc nhìn (Trang Chủ vs Bản Đồ GIS) khi đã đăng nhập -->
+      <div id="view-mode-toggle" class="view-mode-toggle" style="display:none;" title="Chuyển đổi giữa Báo cáo trang chủ và Bản đồ GIS">
+        <button id="btn-view-map" class="btn-view-tab active" onclick="switchMainView('map')">
+          <i class="fa-solid fa-map-location-dot"></i>
+          <span>Bản Đồ GIS</span>
+        </button>
+        <button id="btn-view-dashboard" class="btn-view-tab" onclick="switchMainView('dashboard')">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Trang Chủ</span>
+        </button>
+      </div>
+
       <!-- KHU VỰC TÀI KHOẢN & PHÂN QUYỀN -->
       <div id="auth-actions" style="display:flex; align-items:center; gap:0.5rem; margin-left:0.5rem; border-left:1px solid var(--border-color); padding-left:0.75rem;">
         <!-- Khi Chưa đăng nhập -->
@@ -1041,12 +1053,12 @@
   </div>
 
   <!-- ======================================================================
-       MODAL: NẠP FILE EXCEL MỚI
+       MODAL: NẠP FILE EXCEL & ĐỒNG BỘ GOOGLE SHEETS
        ====================================================================== -->
   <div id="modal-upload" class="modal-overlay">
-    <div class="modal-box" style="max-width:540px;">
+    <div class="modal-box" style="max-width:580px;">
       <div class="modal-header">
-        <h3><i class="fa-solid fa-file-excel" style="color:#10b981;"></i> Nạp & Cập Nhật Dữ Liệu Excel Ca Bệnh</h3>
+        <h3><i class="fa-solid fa-cloud-arrow-up" style="color:#10b981;"></i> Nạp Dữ Liệu & Đồng Bộ Dịch Tễ</h3>
         <button id="btn-close-upload" class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
@@ -1062,16 +1074,62 @@
           </button>
         </div>
 
-        <div id="excel-dropzone" class="dropzone" onclick="document.getElementById('excel-file-input').click()">
-          <i class="fa-solid fa-cloud-arrow-up"></i>
-          <p>Kéo và thả file <b>Danh_sach_ca_benh.xlsx</b> vào đây<br>hoặc nhấp chuột để chọn file</p>
-          <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display:none;">
+        <!-- TABS LỰA CHỌN PHƯƠNG THỨC NẠP -->
+        <div class="modal-tabs">
+          <button type="button" id="tab-btn-excel" class="modal-tab-btn active" onclick="switchUploadTab('excel')">
+            <i class="fa-solid fa-file-excel" style="color:#10b981;"></i> File Excel (.xlsx)
+          </button>
+          <button type="button" id="tab-btn-gsheet" class="modal-tab-btn" onclick="switchUploadTab('gsheet')">
+            <i class="fa-solid fa-table" style="color:#0284c7;"></i> Google Sheets Trực Tuyến
+          </button>
+        </div>
+
+        <!-- TAB 1: FILE EXCEL OFFLINE -->
+        <div id="upload-tab-excel" class="upload-tab-pane">
+          <div id="excel-dropzone" class="dropzone" onclick="document.getElementById('excel-file-input').click()">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <p>Kéo và thả file <b>Danh_sach_ca_benh.xlsx</b> vào đây<br>hoặc nhấp chuột để chọn file</p>
+            <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display:none;">
+          </div>
+          <div style="font-size:0.72rem; color:var(--text-dim); margin-top:0.5rem; line-height:1.4;">
+            <i class="fa-solid fa-database" style="color:var(--accent-cyan);"></i> Dữ liệu lưu trữ bền vững vào <b>IndexedDB</b> (không giới hạn 5MB), tự động cập nhật cả Trang chủ và Bản đồ GIS.
+          </div>
+        </div>
+
+        <!-- TAB 2: GOOGLE SHEETS LIVE SYNC -->
+        <div id="upload-tab-gsheet" class="upload-tab-pane" style="display:none;">
+          <div style="background:rgba(2,132,199,0.08); border:1px solid rgba(2,132,199,0.25); border-radius:8px; padding:0.75rem; margin-bottom:0.75rem;">
+            <label class="form-label" for="gsheet-url-input" style="font-size:0.78rem; font-weight:700; margin-bottom:0.35rem; display:block;">
+              <i class="fa-brands fa-google-drive" style="color:#0ea5e9; margin-right:4px;"></i> Liên kết Google Sheets (Chia sẻ công khai hoặc Xuất bản web):
+            </label>
+            <input type="url" id="gsheet-url-input" class="form-input" placeholder="https://docs.google.com/spreadsheets/d/1BxiMVs.../edit?usp=sharing" style="font-size:0.78rem; padding:0.5rem 0.65rem; width:100%;">
+            <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.35rem; line-height:1.4;">
+              * Yêu cầu bảng tính: Quyền <i>"Bất kỳ ai có liên kết đều có thể xem"</i>. Hệ thống sẽ tự động quét và phân tích các cột dịch tễ.
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.5rem;">
+            <label style="display:flex; align-items:center; gap:0.45rem; font-size:0.75rem; color:var(--text-main); cursor:pointer;">
+              <input type="checkbox" id="chk-gsheet-autosync" style="width:16px; height:16px; accent-color:var(--accent-cyan);">
+              <span>Tự động đồng bộ mỗi khi mở trang web</span>
+            </label>
+            <button type="button" class="btn-primary" onclick="handleManualGSheetSync()" style="font-size:0.78rem; padding:0.45rem 0.95rem; display:inline-flex; align-items:center; gap:0.4rem;">
+              <i class="fa-solid fa-arrows-rotate"></i> Đồng Bộ Ngay
+            </button>
+          </div>
         </div>
 
         <div id="excel-upload-msg" style="display:none; margin-top:0.75rem; padding:0.65rem 0.85rem; border-radius:6px; font-size:0.75rem;"></div>
 
-        <div style="font-size:0.72rem; color:var(--text-dim); margin-top:0.85rem; line-height:1.45; border-top:1px solid rgba(51,65,85,0.4); padding-top:0.65rem;">
-          <i class="fa-solid fa-circle-check" style="color:#10b981; margin-right:0.25rem;"></i> <b>Tự động đồng bộ:</b> File Excel sau khi nạp sẽ được lưu trữ và tự động cập nhật ngay lập tức lên cả <b>Dashboard công khai lúc chưa đăng nhập</b> lẫn <b>Bản đồ GIS chi tiết</b>.
+        <!-- KHU VỰC XUẤT FILE TOÀN HỆ THỐNG (1-CLICK DEPLOY) -->
+        <div style="margin-top:1rem; padding-top:0.85rem; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+          <div style="flex:1; min-width:220px; font-size:0.72rem; color:var(--text-muted); line-height:1.4;">
+            <i class="fa-solid fa-globe" style="color:var(--accent-cyan); margin-right:4px;"></i>
+            Cập nhật vĩnh viễn cho <b>mọi người dùng khác</b> trên host mà không cần ai phải nạp lại?
+          </div>
+          <button type="button" class="btn-secondary" onclick="exportDataEpidemiologyJs()" style="font-size:0.76rem; padding:0.45rem 0.85rem; border-color:var(--accent-cyan); color:var(--accent-cyan); font-weight:600; display:inline-flex; align-items:center; gap:0.35rem;" title="Tải về file data_epidemiology.js chuẩn để commit lên GitHub">
+            <i class="fa-solid fa-file-export"></i> Xuất file data_epidemiology.js
+          </button>
         </div>
       </div>
     </div>
